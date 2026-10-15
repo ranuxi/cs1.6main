@@ -1,0 +1,10 @@
+{
+  "_about": "CS damage-type icons (hud.txt dmg_*) shown while the Minecraft condition holds.",
+  "columns": ["id", "sprite", "condition"],
+  "rows": [
+    {"id": "drowning", "sprite": "dmg_drown",  "condition": "player.air < player.maxAir"},
+    {"id": "burning",  "sprite": "dmg_heat",   "condition": "player.isOnFire()"},
+    {"id": "poisoned", "sprite": "dmg_poison", "condition": "player has POISON or WITHER effect"},
+    {"id": "freezing", "sprite": "dmg_cold",   "condition": "player.frozenTicks > 0"}
+  ]
+}

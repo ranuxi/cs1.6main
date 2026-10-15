@@ -1,0 +1,17 @@
+{
+  "_about": "Keys. CS-mode keys only act while CS mode is on; in Minecraft mode every vanilla key behaves as usual. Attack/use/hotbar keys are taken over in CS mode, so nothing fires twice.",
+  "columns": ["id", "default", "mode", "action"],
+  "rows": [
+    {"id": "toggle_mode",  "default": "F6",          "mode": "both",  "action": "switch CS 1.6 / Minecraft interface (state kept)"},
+    {"id": "fire",         "default": "attack (LMB)","mode": "cs",    "action": "shoot / knife slash / throw grenade (hold for automatic weapons)"},
+    {"id": "alt",          "default": "use (RMB)",   "mode": "cs",    "action": "knife stab, scope zoom on sniper/AUG/SG552"},
+    {"id": "reload",       "default": "R",           "mode": "cs",    "action": "reload"},
+    {"id": "inspect",      "default": "F",           "mode": "cs",    "action": "inspect weapon (procedural twirl; CS 1.6 has no inspect animation)"},
+    {"id": "buy",          "default": "B",           "mode": "cs",    "action": "open buy menu anywhere"},
+    {"id": "buy_primary_ammo",   "default": ",",     "mode": "cs",    "action": "buy one pack of primary ammo"},
+    {"id": "buy_secondary_ammo", "default": ".",     "mode": "cs",    "action": "buy one pack of pistol ammo"},
+    {"id": "slot_1_4",     "default": "hotbar 1-4",  "mode": "cs",    "action": "primary / pistol / knife / grenade"},
+    {"id": "last_weapon",  "default": "hotbar 5",    "mode": "cs",    "action": "previous weapon (CS 'lastinv' on Q is left to Minecraft's drop)"},
+    {"id": "scroll",       "default": "mouse wheel", "mode": "cs",    "action": "next / previous weapon"}
+  ]
+}

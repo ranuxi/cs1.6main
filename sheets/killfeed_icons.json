@@ -1,0 +1,14 @@
+{
+  "_about": "Which CS death-notice icon (hud.txt d_*) a kill shows, by what the player held. First match wins.",
+  "columns": ["id", "match", "sprite"],
+  "rows": [
+    {"id": "sword",    "match": "item id ends with _sword or is an axe",   "sprite": "d_knife"},
+    {"id": "bow",      "match": "minecraft:bow",                            "sprite": "d_scout"},
+    {"id": "crossbow", "match": "minecraft:crossbow",                       "sprite": "d_awp"},
+    {"id": "trident",  "match": "minecraft:trident",                        "sprite": "d_sg552"},
+    {"id": "mace",     "match": "minecraft:mace",                           "sprite": "d_m249"},
+    {"id": "tnt",      "match": "minecraft:tnt or flint_and_steel",         "sprite": "d_grenade"},
+    {"id": "other",    "match": "anything else, empty hand",                "sprite": "d_knife"},
+    {"id": "death",    "match": "the player died",                          "sprite": "d_skull"}
+  ]
+}

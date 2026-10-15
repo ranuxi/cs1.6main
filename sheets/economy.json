@@ -1,0 +1,38 @@
+{
+  "_about": "Money ($, CS rules) and XP (separate progression) awards. Money never comes from XP and XP never buys anything; levels unlock weapons (unlockLevel in weapons/equipment) and pay a one-off bonus.",
+  "settings": {
+    "columns": ["key", "value", "use"],
+    "rows": [
+      {"key": "startMoney",     "value": 800,   "use": "money of a new player"},
+      {"key": "maxMoney",       "value": 16000, "use": "CS money cap"},
+      {"key": "damageScale",    "value": 0.2,   "use": "CS damage x this = Minecraft damage (100 CS HP = 20 MC HP)"},
+      {"key": "headshotMul",    "value": 4.0,   "use": "CS headshot multiplier"},
+      {"key": "armorRatio",     "value": 0.5,   "use": "share of damage armor absorbs while armor > 0"},
+      {"key": "xpPerLevelBase", "value": 100,   "use": "XP needed for level n+1 = n * this"},
+      {"key": "levelUpBonus",   "value": 500,   "use": "$ paid once per level gained"},
+      {"key": "maxLevel",       "value": 10,    "use": "highest level"}
+    ]
+  },
+  "awards": {
+    "columns": ["id", "trigger", "money", "xp"],
+    "rows": [
+      {"id": "kill_hostile",   "trigger": "hostile mob killed with a CS weapon (money = the weapon's killReward)", "money": -1,   "xp": 10},
+      {"id": "kill_player",    "trigger": "another player killed with a CS weapon (weapon's killReward)",        "money": -1,   "xp": 25},
+      {"id": "kill_passive",   "trigger": "passive mob killed with a CS weapon",                                  "money": 0,    "xp": 2},
+      {"id": "headshot",       "trigger": "the kill was a headshot",                                              "money": 0,    "xp": 5},
+      {"id": "round_survived", "trigger": "dawn comes and the player is alive (a night = a CS round won)",        "money": 3250, "xp": 50},
+      {"id": "advancement",    "trigger": "player earns a Minecraft advancement (task completed)",                "money": 300,  "xp": 30},
+      {"id": "ore_mined",      "trigger": "player mines diamond/emerald/ancient debris ore",                      "money": 150,  "xp": 5},
+      {"id": "death",          "trigger": "player dies: keeps money, XP and level; loses primary, grenades and armor; respawns with knife, USP and its ammo", "money": 0, "xp": 0}
+    ]
+  },
+  "start_loadout": {
+    "columns": ["id", "item", "amount"],
+    "rows": [
+      {"id": "knife",  "item": "knife", "amount": 1},
+      {"id": "pistol", "item": "usp",   "amount": 1},
+      {"id": "clip",   "item": "usp clip full", "amount": 12},
+      {"id": "ammo",   "item": "45acp", "amount": 24}
+    ]
+  }
+}

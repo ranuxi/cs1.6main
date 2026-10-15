@@ -1,0 +1,53 @@
+{
+  "sounds": {
+    "_about": "WAV files played from the player's Half-Life folder (never shipped).",
+    "columns": ["id", "path", "when"],
+    "rows": [
+      {"id": "hud_on",   "path": "valve/sound/common/wpn_hudon.wav",  "when": "CS mode switched on"},
+      {"id": "lock_load","path": "cstrike/sound/radio/locknload.wav", "when": "CS mode switched on (after hud_on)"},
+      {"id": "hud_off",  "path": "valve/sound/common/wpn_hudoff.wav", "when": "CS mode switched off"},
+      {"id": "enemy_down","path": "cstrike/sound/radio/enemydown.wav","when": "player kills a hostile mob while CS mode is on"}
+    ]
+  },
+  "vanilla_hidden": {
+    "_about": "Minecraft HUD elements skipped while CS mode is on (Fabric HudElementRegistry.replaceElement). health_bar also marks that Minecraft's HUD is showing (hud-toggle check).",
+    "columns": ["id", "element"],
+    "rows": [
+      {"id": "health",     "element": "VanillaHudElements.HEALTH_BAR"},
+      {"id": "armor",      "element": "VanillaHudElements.ARMOR_BAR"},
+      {"id": "food",       "element": "VanillaHudElements.FOOD_BAR"},
+      {"id": "air",        "element": "VanillaHudElements.AIR_BAR"},
+      {"id": "mount",      "element": "VanillaHudElements.MOUNT_HEALTH"},
+      {"id": "xp_bar",     "element": "VanillaHudElements.INFO_BAR"},
+      {"id": "xp_level",   "element": "VanillaHudElements.EXPERIENCE_LEVEL"},
+      {"id": "crosshair",  "element": "VanillaHudElements.CROSSHAIR"},
+      {"id": "hotbar",     "element": "VanillaHudElements.HOTBAR"},
+      {"id": "item_name",  "element": "VanillaHudElements.HELD_ITEM_TOOLTIP"}
+    ]
+  },
+  "settings": {
+    "_about": "Keys in %LOCALAPPDATA%/CSHudCraft/cshudcraft.properties.",
+    "columns": ["key", "set_by", "default", "use"],
+    "rows": [
+      {"key": "cs_dir",  "set_by": "Melty recipe.settings = {game:counter-strike}", "default": "Steam library auto-detect", "use": "Half-Life folder holding cstrike/ and valve/"},
+      {"key": "enabled", "set_by": "the mod when toggled", "default": "true", "use": "CS mode remembered between plays"}
+    ]
+  },
+  "test_checks": {
+    "columns": ["id", "passes_when"],
+    "rows": [
+      {"id": "cs-files-found",  "passes_when": "hud.txt parsed and v_knife.mdl loaded from the player's CS copy"},
+      {"id": "viewmodel-drawn", "passes_when": "the CS knife viewmodel is drawn for 40 frames in a world"},
+      {"id": "buy-anywhere",    "passes_when": "Deagle bought at spawn and 50AE ammo bought 300 blocks away, money reduced by exactly their prices"},
+      {"id": "shoot-hit",       "passes_when": "a Deagle shot at a zombie 5 blocks ahead damages it"},
+      {"id": "reload",          "passes_when": "R refills the Deagle clip from the 50AE reserve (server state)"},
+      {"id": "mode-toggle",     "passes_when": "F6 shows Minecraft's HUD, F6 again brings the CS HUD back with money and weapons unchanged"}
+    ]
+  },
+  "keys": {
+    "columns": ["id", "default", "category", "action"],
+    "rows": [
+      {"id": "key.cshudcraft.toggle", "default": "F6", "category": "key.category.cshudcraft.main", "action": "switch CS 1.6 / Minecraft interface (see controls.json for the rest)"}
+    ]
+  }
+}

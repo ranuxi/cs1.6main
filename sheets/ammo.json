@@ -1,0 +1,16 @@
+{
+  "_about": "CS 1.6 ammo types: each weapon's 'ammo' points here. One purchase adds packSize rounds for packPrice, up to maxReserve. Icon = hud.txt name in cstrike/sprites (ammo icon drawn next to the clip counter).",
+  "columns": ["id", "name", "packSize", "packPrice", "maxReserve", "icon"],
+  "rows": [
+    {"id": "9mm",        "name": "9mm",         "packSize": 30, "packPrice": 20,  "maxReserve": 120, "icon": "weapon_glock18"},
+    {"id": "45acp",      "name": ".45 ACP",     "packSize": 12, "packPrice": 25,  "maxReserve": 100, "icon": "weapon_usp"},
+    {"id": "357sig",     "name": ".357 SIG",    "packSize": 13, "packPrice": 50,  "maxReserve": 52,  "icon": "weapon_p228"},
+    {"id": "50ae",       "name": ".50 AE",      "packSize": 7,  "packPrice": 40,  "maxReserve": 35,  "icon": "weapon_deagle"},
+    {"id": "57mm",       "name": "5.7mm",       "packSize": 50, "packPrice": 50,  "maxReserve": 100, "icon": "weapon_p90"},
+    {"id": "buckshot",   "name": "12 gauge",    "packSize": 8,  "packPrice": 65,  "maxReserve": 32,  "icon": "weapon_m3"},
+    {"id": "556nato",    "name": "5.56 NATO",   "packSize": 30, "packPrice": 60,  "maxReserve": 90,  "icon": "weapon_m4a1"},
+    {"id": "556natobox", "name": "5.56 NATO box","packSize": 30,"packPrice": 60,  "maxReserve": 200, "icon": "weapon_m249"},
+    {"id": "762nato",    "name": "7.62 NATO",   "packSize": 30, "packPrice": 80,  "maxReserve": 90,  "icon": "weapon_ak47"},
+    {"id": "338magnum",  "name": ".338 Magnum", "packSize": 10, "packPrice": 125, "maxReserve": 30,  "icon": "weapon_awp"}
+  ]
+}
