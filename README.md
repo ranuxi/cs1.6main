@@ -15,9 +15,11 @@ Counter-Strike 1.6 в выживании Minecraft 1.21.11 (Fabric). Мир ос
 
 ## Установка вручную
 
+**Скачать готовый мод:** [release/CS16Craft-mod-1.0.0.zip](release/CS16Craft-mod-1.0.0.zip) (кнопка «Download raw file» на странице файла).
+
 1. Minecraft: Java Edition и Counter-Strike 1.6 (Steam) на этом ПК.
 2. [Fabric Loader](https://fabricmc.net/use/installer/) для 1.21.11.
-3. Положить `cshudcraft-1.0.0.jar` и `fabric-api-0.141.6+1.21.11.jar` (из архива релиза) в `%APPDATA%\.minecraft\mods`.
+3. Положить `cshudcraft-1.0.0.jar` и `fabric-api-0.141.6+1.21.11.jar` из папки `mods` архива в `%APPDATA%\.minecraft\mods`.
 4. Запустить профиль `fabric-loader-1.21.11`.
 
 Путь к CS находится сам (библиотеки Steam) или задаётся в `%LOCALAPPDATA%\CSHudCraft\cshudcraft.properties` строкой `cs_dir=...`.
