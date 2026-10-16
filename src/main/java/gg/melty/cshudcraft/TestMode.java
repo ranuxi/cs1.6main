@@ -48,6 +48,7 @@ final class TestMode {
     private static int stage, wait, inWorld, stageTicks, mark;
     private static int moneyMark;
     private static UUID zombie;
+    private static net.minecraft.util.math.BlockPos obsidian;
     static boolean trigger;
     /** Dev check only: CSHUDCRAFT_SHOTS=1 saves screenshots of each step and plays a longer showcase. */
     private static final boolean SHOTS = "1".equals(System.getenv("CSHUDCRAFT_SHOTS"));
@@ -205,8 +206,8 @@ final class TestMode {
             case 10 -> {
                 CsState synced = p.getAttached(CsNet.STATE);
                 int clipMax = Sheets.weapon("deagle").clip();
-                if (synced != null && synced.clip("deagle") == clipMax && synced.reserveOf("50ae") < mark) { report("reload", null); next(11, 20); }
-                else if (stageTicks > 200) { report("reload", "clip " + (synced == null ? -1 : synced.clip("deagle")) + "/" + clipMax); next(11, 0); }
+                if (synced != null && synced.clip("deagle") == clipMax && synced.reserveOf("50ae") < mark) { report("reload", null); next(15, 20); }
+                else if (stageTicks > 200) { report("reload", "clip " + (synced == null ? -1 : synced.clip("deagle")) + "/" + clipMax); next(15, 0); }
             }
             case 11 -> { // F6 to Minecraft's interface and back; nothing may change
                 moneyMark = st.money;
@@ -227,6 +228,41 @@ final class TestMode {
                 else report("mode-toggle", "after switching back: frames " + (CsHudCraft.csFrames() - mark) + ", money " + now.money + " (was " + moneyMark + ")");
                 shot(c, "6_cs_back");
                 next(SHOTS ? 20 : 99, 0);
+            }
+            case 15 -> { // obsidian 3 blocks ahead at eye height
+                Vec3d look = Vec3d.fromPolar(0, p.getYaw());
+                net.minecraft.util.math.BlockPos bp = net.minecraft.util.math.BlockPos.ofFloored(p.getEyePos().add(look.multiply(3)));
+                obsidian = bp;
+                server.execute(() -> {
+                    ServerPlayerEntity sp = serverPlayer(c);
+                    if (sp != null) sp.getEntityWorld().setBlockState(bp, net.minecraft.block.Blocks.OBSIDIAN.getDefaultState());
+                });
+                mark = CsHudCraft.shots();
+                next(16, 10);
+            }
+            case 16 -> {
+                ServerPlayerEntity sp = serverPlayer(c);
+                if (sp == null) return;
+                ServerWorld w = sp.getEntityWorld();
+                boolean gone = !w.getBlockState(obsidian).isOf(net.minecraft.block.Blocks.OBSIDIAN);
+                int fired = CsHudCraft.shots() - mark;
+                if (gone) {
+                    if (fired >= 2) report("block-break", null);
+                    else report("block-break", "obsidian broke after " + fired + " shot(s), expected several");
+                    shot(c, "4_obsidian_broken");
+                    next(11, 20);
+                    return;
+                }
+                if (fired == 2) shot(c, "4_obsidian_cracked");
+                if (fired >= 7 || stageTicks > 300) {
+                    report("block-break", "obsidian still standing after " + fired + " Deagle shots (" + Math.round(BlockDamage.progress(w, obsidian) * 100) + "% damaged)");
+                    next(11, 20);
+                    return;
+                }
+                Vec3d aim = Vec3d.ofCenter(obsidian).subtract(p.getEyePos());
+                p.setYaw((float) (MathHelper.atan2(aim.z, aim.x) * 57.2958) - 90f);
+                p.setPitch((float) -(MathHelper.atan2(aim.y, Math.sqrt(aim.x * aim.x + aim.z * aim.z)) * 57.2958));
+                trigger = (stageTicks % 8) == 0; // Deagle is semi-automatic: press, release
             }
             case 20 -> { // showcase: rich, max level
                 server.execute(() -> {

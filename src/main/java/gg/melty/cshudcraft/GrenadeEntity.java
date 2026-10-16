@@ -16,6 +16,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
@@ -105,6 +106,14 @@ public class GrenadeEntity extends ThrownEntity {
             default -> { // hegrenade
                 w.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, c.x, c.y, c.z, 1, 0, 0, 0, 0);
                 CsServer.soundAround(w, c, "weapons/hegrenade-" + (random.nextBoolean() ? 1 : 2) + ".wav", 1f, null, 96);
+                if (Sheets.block("heDamage") > 0.5) { // blocks near the blast take damage too
+                    BlockPos center = BlockPos.ofFloored(c);
+                    ServerPlayerEntity by = owner instanceof ServerPlayerEntity sp ? sp : null;
+                    for (BlockPos bp : BlockPos.iterate(center.add(-3, -3, -3), center.add(3, 3, 3))) {
+                        double d = Vec3d.ofCenter(bp).distanceTo(c);
+                        if (d <= 3.5) BlockDamage.damage(by, w, bp.toImmutable(), (float) (120 * (1 - d / 4.0)));
+                    }
+                }
                 double radius = 7;
                 for (LivingEntity e : w.getEntitiesByClass(LivingEntity.class, new Box(c, c).expand(radius), LivingEntity::isAlive)) {
                     double d = e.getBoundingBox().getCenter().distanceTo(c);

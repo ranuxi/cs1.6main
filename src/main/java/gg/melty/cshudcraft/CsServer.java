@@ -226,7 +226,8 @@ public final class CsServer implements ModInitializer {
             BlockState st = world.getBlockState(pos);
             world.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, st), stop.x, stop.y, stop.z, 5, 0.05, 0.05, 0.05, 0.05);
             world.spawnParticles(ParticleTypes.SMOKE, stop.x, stop.y, stop.z, 2, 0.02, 0.02, 0.02, 0.01);
-            if (isShatterable(st) && world.canEntityModifyAt(p, pos)) world.breakBlock(pos, false, p);
+            double dist = eye.distanceTo(stop);
+            BlockDamage.damage(p, world, pos, (float) (w.damage() * Math.pow(w.rangeModifier(), dist * UNITS_PER_BLOCK / 500.0)));
         }
     }
 
@@ -269,7 +270,10 @@ public final class CsServer implements ModInitializer {
         Vec3d stop = block.getType() == HitResult.Type.MISS ? end : block.getPos();
         EntityHitResult ent = ProjectileUtil.raycast(p, eye, stop, new Box(eye, stop).expand(0.6),
                 e -> e instanceof LivingEntity && e.isAlive() && e != p, eye.squaredDistanceTo(stop));
-        if (ent == null) return;
+        if (ent == null) {
+            if (block.getType() == HitResult.Type.BLOCK) BlockDamage.damage(p, world, block.getBlockPos(), stab ? 65f : 15f);
+            return;
+        }
         LivingEntity t = (LivingEntity) ent.getEntity();
         float dmg = stab ? 65f : 15f;
         Vec3d toTarget = t.getEntityPos().subtract(p.getEntityPos()).multiply(1, 0, 1).normalize();
@@ -452,6 +456,7 @@ public final class CsServer implements ModInitializer {
         long now = System.currentTimeMillis();
         LAST_HIT.values().removeIf(h -> now - h.at() > 10000);
         SMOKES.removeIf(GrenadeEntity.Smoke::tick);
+        BlockDamage.tick();
     }
 
     /** CS move speed of the weapon in hand (250 units/s = full speed), only in CS mode. */

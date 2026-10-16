@@ -47,6 +47,9 @@ public final class Sheets {
     public static final Map<String, Equipment> EQUIPMENT = new LinkedHashMap<>();
     public static final Map<String, Award> AWARDS = new LinkedHashMap<>();
     public static final Map<String, Double> ECONOMY = new LinkedHashMap<>();
+    public static final Map<String, Double> BLOCK_SETTINGS = new LinkedHashMap<>();
+    /** block_durability.json overrides: block id -> CS hp. */
+    public static final Map<String, Integer> BLOCK_HP = new LinkedHashMap<>();
 
     /** Buy-menu categories in CS order (weapons.json/equipment.json "category"; "ammo" is the ammo sheet). */
     public static final List<String> CATEGORIES = List.of(
@@ -88,12 +91,27 @@ public final class Sheets {
             JsonObject r = e.getAsJsonObject();
             AWARDS.put(s(r, "id"), new Award(s(r, "id"), i(r, "money"), i(r, "xp")));
         }
-        CsHudCraft.LOG.info("[CSHudCraft] Sheets: {} weapons, {} ammo types, {} equipment", WEAPONS.size(), AMMO.size(), EQUIPMENT.size());
+        JsonObject blocks = read("block_durability");
+        for (JsonElement e : rows(blocks.getAsJsonObject("settings"))) {
+            JsonObject r = e.getAsJsonObject();
+            BLOCK_SETTINGS.put(s(r, "key"), r.get("value").getAsDouble());
+        }
+        for (JsonElement e : rows(blocks.getAsJsonObject("overrides"))) {
+            JsonObject r = e.getAsJsonObject();
+            BLOCK_HP.put(s(r, "id"), i(r, "hp"));
+        }
+        CsHudCraft.LOG.info("[CSHudCraft] Sheets: {} weapons, {} ammo types, {} equipment, {} block overrides", WEAPONS.size(), AMMO.size(), EQUIPMENT.size(), BLOCK_HP.size());
     }
 
     public static double eco(String key) {
         Double v = ECONOMY.get(key);
         if (v == null) throw new IllegalStateException("economy.json has no " + key);
+        return v;
+    }
+
+    public static double block(String key) {
+        Double v = BLOCK_SETTINGS.get(key);
+        if (v == null) throw new IllegalStateException("block_durability.json has no " + key);
         return v;
     }
 

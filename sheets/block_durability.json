@@ -1,0 +1,37 @@
+{
+  "_about": "How much CS damage a block takes before a bullet (or knife, or HE grenade) breaks it. Every block not listed gets hp = base + scale * hardness^exponent from its Minecraft hardness, so dirt goes in one shot and obsidian takes about 6 AK-47 hits (36 each). Blocks with negative hardness (bedrock, barriers) never break. Damage on a block cracks it visibly and heals after healSeconds without hits. Broken blocks drop their items like mining.",
+  "settings": {
+    "columns": ["key", "value", "use"],
+    "rows": [
+      {"key": "enabled",     "value": 1,    "use": "1 = bullets break blocks, 0 = only chip them"},
+      {"key": "base",        "value": 10,   "use": "hp of a block with hardness 0"},
+      {"key": "scale",       "value": 13,   "use": "hp added per hardness^exponent"},
+      {"key": "exponent",    "value": 0.7,  "use": "how fast hp grows with hardness"},
+      {"key": "healSeconds", "value": 12,   "use": "damage on a block resets after this long without hits"},
+      {"key": "heDamage",    "value": 1,    "use": "1 = HE grenades also damage blocks (falloff with distance)"}
+    ]
+  },
+  "overrides": {
+    "columns": ["id", "hp", "note"],
+    "rows": [
+      {"id": "minecraft:dirt",            "hp": 14,  "note": "softest: one shot from anything"},
+      {"id": "minecraft:grass_block",     "hp": 14,  "note": "like dirt"},
+      {"id": "minecraft:coarse_dirt",     "hp": 14,  "note": "like dirt"},
+      {"id": "minecraft:farmland",        "hp": 14,  "note": "like dirt"},
+      {"id": "minecraft:sand",            "hp": 14,  "note": "like dirt"},
+      {"id": "minecraft:gravel",          "hp": 16,  "note": "one shot"},
+      {"id": "minecraft:glass",           "hp": 1,   "note": "shatters at once"},
+      {"id": "minecraft:glass_pane",      "hp": 1,   "note": "shatters at once"},
+      {"id": "minecraft:oak_leaves",      "hp": 4,   "note": "leaves"},
+      {"id": "minecraft:stone",           "hp": 30,  "note": "1 AK, 2 pistol shots"},
+      {"id": "minecraft:cobblestone",     "hp": 36,  "note": "1 AK, 2 pistol shots"},
+      {"id": "minecraft:deepslate",       "hp": 48,  "note": "2 AK"},
+      {"id": "minecraft:iron_block",      "hp": 80,  "note": "3 AK"},
+      {"id": "minecraft:diamond_block",   "hp": 90,  "note": "3 AK"},
+      {"id": "minecraft:obsidian",        "hp": 216, "note": "6 AK shots (6 x 36), 4 Deagle, 2 AWP"},
+      {"id": "minecraft:crying_obsidian", "hp": 216, "note": "like obsidian"},
+      {"id": "minecraft:ancient_debris",  "hp": 260, "note": "tougher than obsidian"},
+      {"id": "minecraft:netherite_block", "hp": 300, "note": "toughest breakable"}
+    ]
+  }
+}
