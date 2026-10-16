@@ -42,18 +42,22 @@ public final class Sheets {
 
     public record Award(String id, int money, int xp) {}
 
+    /** inspect.json: a weapon whose inspect turns its hand bones instead of tilting the whole model. */
+    public record Inspect(String id, String mode, String[] bones, float ax, float ay, float az, float lift) {}
+
     public static final Map<String, Weapon> WEAPONS = new LinkedHashMap<>();
     public static final Map<String, Ammo> AMMO = new LinkedHashMap<>();
     public static final Map<String, Equipment> EQUIPMENT = new LinkedHashMap<>();
     public static final Map<String, Award> AWARDS = new LinkedHashMap<>();
     public static final Map<String, Double> ECONOMY = new LinkedHashMap<>();
     public static final Map<String, Double> BLOCK_SETTINGS = new LinkedHashMap<>();
+    public static final Map<String, Inspect> INSPECT = new LinkedHashMap<>();
     /** block_durability.json overrides: block id -> CS hp. */
     public static final Map<String, Integer> BLOCK_HP = new LinkedHashMap<>();
 
     /** Buy-menu categories in CS order (weapons.json/equipment.json "category"; "ammo" is the ammo sheet). */
     public static final List<String> CATEGORIES = List.of(
-            "pistols", "shotguns", "smgs", "rifles", "snipers", "machineguns", "knives", "armor", "grenades", "ammo");
+            "pistols", "shotguns", "smgs", "rifles", "snipers", "machineguns", "knives", "equipment", "grenades", "ammo");
 
     private Sheets() {}
 
@@ -90,6 +94,11 @@ public final class Sheets {
         for (JsonElement e : rows(eco.getAsJsonObject("awards"))) {
             JsonObject r = e.getAsJsonObject();
             AWARDS.put(s(r, "id"), new Award(s(r, "id"), i(r, "money"), i(r, "xp")));
+        }
+        for (JsonElement e : rows(read("inspect"))) {
+            JsonObject r = e.getAsJsonObject();
+            INSPECT.put(s(r, "id"), new Inspect(s(r, "id"), s(r, "mode"), s(r, "bones").split(";"),
+                    f(r, "ax"), f(r, "ay"), f(r, "az"), f(r, "lift")));
         }
         JsonObject blocks = read("block_durability");
         for (JsonElement e : rows(blocks.getAsJsonObject("settings"))) {

@@ -57,6 +57,8 @@ public final class CsServer implements ModInitializer {
     public static final Identifier SPEED_ID = Identifier.of(CsHudCraft.MOD_ID, "weapon_speed");
     public static final RegistryKey<EntityType<?>> GRENADE_KEY = RegistryKey.of(RegistryKeys.ENTITY_TYPE, Identifier.of(CsHudCraft.MOD_ID, "grenade"));
     public static EntityType<GrenadeEntity> GRENADE;
+    public static final RegistryKey<EntityType<?>> C4_KEY = RegistryKey.of(RegistryKeys.ENTITY_TYPE, Identifier.of(CsHudCraft.MOD_ID, "c4"));
+    public static EntityType<C4Entity> C4;
 
     /** CS units per block, for range falloff (a 72-unit CS player is 1.8 blocks). */
     static final double UNITS_PER_BLOCK = 40.0;
@@ -66,6 +68,9 @@ public final class CsServer implements ModInitializer {
         long reloadStarted;
         String reloadWeapon = "";
         boolean aliveSinceDusk;
+        long plantStart;
+        int defuseId = -1;
+        long defuseStart;
     }
 
     record LastHit(UUID attacker, String weapon, boolean headshot, long at) {}
@@ -84,6 +89,9 @@ public final class CsServer implements ModInitializer {
         GRENADE = Registry.register(Registries.ENTITY_TYPE, GRENADE_KEY,
                 EntityType.Builder.<GrenadeEntity>create(GrenadeEntity::new, SpawnGroup.MISC)
                         .dimensions(0.25f, 0.25f).maxTrackingRange(4).trackingTickInterval(2).build(GRENADE_KEY));
+        C4 = Registry.register(Registries.ENTITY_TYPE, C4_KEY,
+                EntityType.Builder.<C4Entity>create(C4Entity::new, SpawnGroup.MISC)
+                        .dimensions(0.6f, 0.3f).maxTrackingRange(8).trackingTickInterval(5).build(C4_KEY));
 
         ServerPlayNetworking.registerGlobalReceiver(CsNet.Action.ID, (payload, ctx) -> handle(ctx.player(), payload));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> ensure(handler.player));
@@ -93,6 +101,7 @@ public final class CsServer implements ModInitializer {
             // CS: you keep your money; a fresh life starts with knife and the default pistol
             s.primary = "";
             s.grenades.clear();
+            s.hasBomb = false;
             s.armor = 0;
             s.helmet = false;
             s.giveStartLoadout();
@@ -104,6 +113,43 @@ public final class CsServer implements ModInitializer {
             if (player instanceof ServerPlayerEntity sp && isPrecious(st)) award(sp, "ore_mined", 0);
         });
         ServerTickEvents.END_SERVER_TICK.register(CsServer::tick);
+        registerTestCommands();
+    }
+
+    /**
+     * Testing helpers for single-player worlds only: /csmoney <amount> sets your money,
+     * /cslevel <level> sets your level (unlocks weapons). Not available on multiplayer servers.
+     */
+    private static void registerTestCommands() {
+        net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback.EVENT.register((dispatcher, access, env) -> {
+            dispatcher.register(net.minecraft.server.command.CommandManager.literal("csmoney")
+                    .requires(src -> src.getServer() != null && src.getServer().isSingleplayer())
+                    .then(net.minecraft.server.command.CommandManager.argument("amount", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 1_000_000))
+                            .executes(ctx -> {
+                                ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                if (p == null) return 0;
+                                CsState s = state(p);
+                                s.money = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "amount");
+                                save(p, s);
+                                int m = s.money;
+                                ctx.getSource().sendFeedback(() -> net.minecraft.text.Text.literal("CS money: $" + m), false);
+                                return 1;
+                            })));
+            dispatcher.register(net.minecraft.server.command.CommandManager.literal("cslevel")
+                    .requires(src -> src.getServer() != null && src.getServer().isSingleplayer())
+                    .then(net.minecraft.server.command.CommandManager.argument("level", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, (int) Sheets.eco("maxLevel")))
+                            .executes(ctx -> {
+                                ServerPlayerEntity p = ctx.getSource().getPlayer();
+                                if (p == null) return 0;
+                                CsState s = state(p);
+                                s.level = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "level");
+                                s.xp = 0;
+                                save(p, s);
+                                int l = s.level;
+                                ctx.getSource().sendFeedback(() -> net.minecraft.text.Text.literal("CS level: " + l), false);
+                                return 1;
+                            })));
+        });
     }
 
     // ---------------------------------------------------------------- state
@@ -178,6 +224,28 @@ public final class CsServer implements ModInitializer {
                 save(p, s);
             }
             case "throw" -> throwGrenade(p, s, a);
+            case "plant_start" -> {
+                if (s.hasBomb && s.slot == CsState.SLOT_BOMB) live.plantStart = now;
+            }
+            case "plant" -> plant(p, s, live, now);
+            case "defuse_start" -> {
+                C4Entity bomb = bombNear(p, a);
+                if (bomb != null) {
+                    live.defuseId = bomb.getId();
+                    live.defuseStart = now;
+                    soundAround(p.getEntityWorld(), bomb.getEntityPos(), "weapons/c4_disarm.wav", 1f, null, 32);
+                }
+            }
+            case "defuse_finish" -> {
+                C4Entity bomb = bombNear(p, a);
+                if (bomb == null || bomb.getId() != live.defuseId || now - live.defuseStart < 9500) return;
+                live.defuseId = -1;
+                ServerWorld w = p.getEntityWorld();
+                soundAround(w, bomb.getEntityPos(), "weapons/c4_disarmed.wav", 1f, null, 48);
+                bomb.discard();
+                for (ServerPlayerEntity o : w.getPlayers()) send(o, "sound", "radio/bombdef.wav");
+                award(p, "bomb_defused", 0);
+            }
             case "buy" -> buy(p, s, a.arg());
             default -> { }
         }
@@ -283,6 +351,34 @@ public final class CsServer implements ModInitializer {
         soundAround(world, t.getEyePos(), stab ? "weapons/knife_stab.wav" : "weapons/knife_hit1.wav", 1f, p, 32);
     }
 
+    // ---------------------------------------------------------------- C4
+
+    /** CS plants take the full 3 s of the pressbutton animation, on the ground. */
+    private static void plant(ServerPlayerEntity p, CsState s, Live live, long now) {
+        if (!s.hasBomb || s.slot != CsState.SLOT_BOMB || !s.csMode || !p.isOnGround()) return;
+        if (live.plantStart == 0 || now - live.plantStart < 2800) return;
+        live.plantStart = 0;
+        ServerWorld w = p.getEntityWorld();
+        C4Entity bomb = new C4Entity(C4, w);
+        bomb.refreshPositionAndAngles(p.getX(), p.getY(), p.getZ(), p.getYaw(), 0);
+        bomb.planter = p.getUuid();
+        w.spawnEntity(bomb);
+        s.hasBomb = false;
+        s.slot = s.hasSlot(CsState.SLOT_PRIMARY) ? CsState.SLOT_PRIMARY : s.hasSlot(CsState.SLOT_PISTOL) ? CsState.SLOT_PISTOL : CsState.SLOT_KNIFE;
+        save(p, s);
+        soundAround(w, bomb.getEntityPos(), "weapons/c4_plant.wav", 1f, null, 48);
+        for (ServerPlayerEntity o : w.getPlayers()) send(o, "sound", "radio/bombpl.wav");
+        award(p, "bomb_planted", 0);
+    }
+
+    /** The planted C4 a defuse request names (entity id in nums[0]), if the player is close enough. */
+    private static C4Entity bombNear(ServerPlayerEntity p, CsNet.Action a) {
+        if (a.nums().isEmpty()) return null;
+        Entity e = p.getEntityWorld().getEntityById(Math.round(a.nums().get(0)));
+        if (!(e instanceof C4Entity bomb) || !bomb.isAlive()) return null;
+        return p.getEyePos().distanceTo(bomb.getEntityPos()) <= 3.2 ? bomb : null;
+    }
+
     // ---------------------------------------------------------------- grenades
 
     private static void throwGrenade(ServerPlayerEntity p, CsState s, CsNet.Action a) {
@@ -359,6 +455,11 @@ public final class CsServer implements ModInitializer {
                 if (!pay(p, s, price)) return;
                 s.armor = 100;
                 s.helmet = true;
+            }
+            case "c4" -> {
+                if (s.hasBomb) { deny(p, "have"); return; }
+                if (!pay(p, s, e.price())) return;
+                s.hasBomb = true;
             }
             default -> {
                 if (!e.isGrenade()) return;

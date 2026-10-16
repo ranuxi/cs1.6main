@@ -33,7 +33,7 @@ public class CsHudCraft implements ClientModInitializer {
     /** hud.txt names preloaded and checked at start (the rest load when first drawn). */
     public static final List<String> SPRITES_USED = List.of(
             "cross", "suit_full", "suit_empty", "suithelmet_full", "dollar", "divider", "stopwatch", "radar",
-            "flash_empty", "flash_full", "flash_beam", "plus", "minus",
+            "flash_empty", "flash_full", "flash_beam", "plus", "minus", "c4",
             "dmg_drown", "dmg_heat", "dmg_poison", "dmg_cold",
             "d_knife", "d_skull", "d_headshot",
             "number_0", "number_1", "number_2", "number_3", "number_4",
@@ -46,7 +46,7 @@ public class CsHudCraft implements ClientModInitializer {
 
     // sheets/controls.json
     private static final KeyBinding.Category CATEGORY = KeyBinding.Category.create(Identifier.of(MOD_ID, "main"));
-    public static KeyBinding TOGGLE, RELOAD, INSPECT, BUY, AMMO_PRIMARY, AMMO_SECONDARY;
+    public static KeyBinding TOGGLE, RELOAD, INSPECT, BUY, AMMO_PRIMARY, AMMO_SECONDARY, HAND;
 
     private static boolean enabled = true;
     private static int csFrames;
@@ -75,6 +75,7 @@ public class CsHudCraft implements ClientModInitializer {
         BUY = key("buy", GLFW.GLFW_KEY_B);
         AMMO_PRIMARY = key("ammo_primary", GLFW.GLFW_KEY_COMMA);
         AMMO_SECONDARY = key("ammo_secondary", GLFW.GLFW_KEY_PERIOD);
+        HAND = key("hand", GLFW.GLFW_KEY_H);
 
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> loadAssets());
         // Minecraft's own HUD parts are skipped while the CS HUD is up (sheets/systems.json "vanilla_hidden")
@@ -95,8 +96,14 @@ public class CsHudCraft implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(CsNet.Event.ID, (payload, ctx) -> ClientCs.onEvent(payload));
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> ClientCs.onModeChanged(enabled));
         EntityRendererRegistry.register(CsServer.GRENADE, GrenadeRenderer::new);
+        EntityRendererRegistry.register(CsServer.C4, C4Renderer::new);
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (TOGGLE.wasPressed()) setEnabled(!enabled, true);
+            while (HAND.wasPressed()) {
+                boolean left = !CONFIG.leftHanded();
+                CONFIG.setLeftHanded(left);
+                if (client.player != null) client.player.sendMessage(Text.translatable(left ? "cshudcraft.hand.left" : "cshudcraft.hand.right"), true);
+            }
             ClientCs.tick(client);
             TestMode.tick(client);
         });

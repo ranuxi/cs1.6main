@@ -22,6 +22,9 @@
       {"id": "headshot",       "trigger": "the kill was a headshot",                                              "money": 0,    "xp": 5},
       {"id": "round_survived", "trigger": "dawn comes and the player is alive (a night = a CS round won)",        "money": 3250, "xp": 50},
       {"id": "advancement",    "trigger": "player earns a Minecraft advancement (task completed)",                "money": 300,  "xp": 30},
+      {"id": "bomb_planted",   "trigger": "player planted C4",                                                    "money": 300,  "xp": 10},
+      {"id": "bomb_exploded",  "trigger": "the player's C4 went off",                                           "money": 500,  "xp": 20},
+      {"id": "bomb_defused",   "trigger": "player defused a C4",                                                  "money": 300,  "xp": 25},
       {"id": "ore_mined",      "trigger": "player mines diamond/emerald/ancient debris ore",                      "money": 150,  "xp": 5},
       {"id": "death",          "trigger": "player dies: keeps money, XP and level; loses primary, grenades and armor; respawns with knife, USP and its ammo", "money": 0, "xp": 0}
     ]

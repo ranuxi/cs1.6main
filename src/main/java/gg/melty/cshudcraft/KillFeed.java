@@ -29,7 +29,7 @@ public final class KillFeed {
 
     /** A kill made with a CS weapon. */
     static void onCsKill(PlayerEntity killer, LivingEntity victim, String weapon, boolean headshot) {
-        String icon = weapon.equals("hegrenade") ? "d_grenade" : "d_" + weapon;
+        String icon = weapon.equals("hegrenade") || weapon.equals("c4") ? "d_grenade" : "d_" + weapon;
         INCOMING.add(new Entry(killer.getName().getString(), Side.CT, icon, headshot, victim.getName().getString(), side(victim), 0));
         if (victim instanceof Monster || victim instanceof PlayerEntity) enemyDownPending = true;
     }

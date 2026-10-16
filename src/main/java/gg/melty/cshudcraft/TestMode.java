@@ -49,7 +49,9 @@ final class TestMode {
     private static int moneyMark;
     private static UUID zombie;
     private static net.minecraft.util.math.BlockPos obsidian;
+    private static int bombId;
     static boolean trigger;
+    static boolean alt;
     /** Dev check only: CSHUDCRAFT_SHOTS=1 saves screenshots of each step and plays a longer showcase. */
     private static final boolean SHOTS = "1".equals(System.getenv("CSHUDCRAFT_SHOTS"));
 
@@ -110,6 +112,7 @@ final class TestMode {
 
     static void tick(MinecraftClient c) {
         trigger = false;
+        alt = false;
         if (!active || c.player == null || c.world == null || (c.currentScreen != null && !(c.currentScreen instanceof BuyScreen))) return;
         inWorld++;
         if (wait > 0) { wait--; return; }
@@ -250,19 +253,57 @@ final class TestMode {
                     if (fired >= 2) report("block-break", null);
                     else report("block-break", "obsidian broke after " + fired + " shot(s), expected several");
                     shot(c, "4_obsidian_broken");
-                    next(11, 20);
+                    next(40, 20);
                     return;
                 }
                 if (fired == 2) shot(c, "4_obsidian_cracked");
                 if (fired >= 7 || stageTicks > 300) {
                     report("block-break", "obsidian still standing after " + fired + " Deagle shots (" + Math.round(BlockDamage.progress(w, obsidian) * 100) + "% damaged)");
-                    next(11, 20);
+                    next(40, 20);
                     return;
                 }
                 Vec3d aim = Vec3d.ofCenter(obsidian).subtract(p.getEyePos());
                 p.setYaw((float) (MathHelper.atan2(aim.z, aim.x) * 57.2958) - 90f);
                 p.setPitch((float) -(MathHelper.atan2(aim.y, Math.sqrt(aim.x * aim.x + aim.z * aim.z)) * 57.2958));
                 trigger = (stageTicks % 8) == 0; // Deagle is semi-automatic: press, release
+            }
+            case 40 -> { // C4: money for it, buy it at the far-away spot
+                server.execute(() -> {
+                    ServerPlayerEntity sp = serverPlayer(c);
+                    if (sp == null) return;
+                    CsState s = CsServer.state(sp);
+                    s.money += 2000;
+                    CsServer.save(sp, s);
+                });
+                next(41, 10);
+            }
+            case 41 -> {
+                ClientCs.send("buy", "c4");
+                next(42, 10);
+            }
+            case 42 -> {
+                if (st.hasBomb) {
+                    ClientCs.select(CsState.SLOT_BOMB);
+                    p.setPitch(80f);
+                    next(43, 25);
+                } else if (stageTicks > 100) { report("c4-plant", "could not buy the C4 (money " + st.money + ")"); report("c4-defuse", "no C4 to defuse"); next(11, 0); }
+            }
+            case 43 -> { // hold fire for the 3 s plant
+                trigger = true;
+                if (stageTicks == 40) shot(c, "4c_c4_planting");
+                ServerPlayerEntity sp = serverPlayer(c);
+                C4Entity bomb = sp == null ? null : sp.getEntityWorld().getEntitiesByClass(C4Entity.class, sp.getBoundingBox().expand(3), e -> true).stream().findFirst().orElse(null);
+                if (bomb != null) { report("c4-plant", null); bombId = bomb.getId(); next(44, 20); }
+                else if (stageTicks > 140) { report("c4-plant", "no C4 planted after holding fire 7 s"); report("c4-defuse", "no C4 to defuse"); next(11, 0); }
+            }
+            case 44 -> { // look at it and hold use for the 10 s defuse
+                p.setPitch(88f);
+                alt = true;
+                if (stageTicks == 60) shot(c, "4d_c4_defusing");
+                ServerPlayerEntity sp = serverPlayer(c);
+                boolean gone = sp != null && sp.getEntityWorld().getEntityById(bombId) == null;
+                if (gone) { report("c4-defuse", null); p.setPitch(0f); next(11, 20); }
+                else if (stageTicks > 300) { report("c4-defuse", "C4 still there after holding use 15 s"); p.setPitch(0f); next(11, 0); }
             }
             case 20 -> { // showcase: rich, max level
                 server.execute(() -> {
@@ -322,7 +363,23 @@ final class TestMode {
             }
             case 27 -> {
                 if (stageTicks == 1) ClientCs.inspect();
-                if (stageTicks == 18) { shot(c, "11_inspect"); CsHudCraft.LOG.info("[CSHudCraft] test: showcase done"); next(99, 0); }
+                if (stageTicks == 18) { shot(c, "11_inspect"); next(28, 30); }
+            }
+            case 28 -> {
+                ClientCs.send("buy", "elite");
+                ClientCs.send("buy", "awp");
+                next(29, 10);
+            }
+            case 29 -> {
+                if (stageTicks == 1) ClientCs.select(CsState.SLOT_PISTOL);
+                if (stageTicks == 30) ClientCs.inspect();
+                if (stageTicks == 50) shot(c, "12_elite_inspect");
+                if (stageTicks == 80) { CsHudCraft.CONFIG.setLeftHanded(true); }
+                if (stageTicks == 84) shot(c, "13_left_hand");
+                if (stageTicks == 86) { CsHudCraft.CONFIG.setLeftHanded(false); ClientCs.select(CsState.SLOT_PRIMARY); }
+                if (stageTicks == 120) ClientCs.altFire();
+                if (stageTicks == 130) shot(c, "14_awp_scope");
+                if (stageTicks == 132) { ClientCs.altFire(); CsHudCraft.LOG.info("[CSHudCraft] test: showcase done"); next(99, 0); }
             }
             default -> { }
         }

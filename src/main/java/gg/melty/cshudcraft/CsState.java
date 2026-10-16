@@ -16,7 +16,7 @@ import java.util.Map;
  * Saved with the player and synced to that player only. Switching interface never touches it.
  */
 public final class CsState {
-    public static final int SLOT_PRIMARY = 1, SLOT_PISTOL = 2, SLOT_KNIFE = 3, SLOT_GRENADE = 4;
+    public static final int SLOT_PRIMARY = 1, SLOT_PISTOL = 2, SLOT_KNIFE = 3, SLOT_GRENADE = 4, SLOT_BOMB = 5;
     private static final Gson GSON = new GsonBuilder().create();
 
     public int money;
@@ -31,6 +31,8 @@ public final class CsState {
     public Map<String, Integer> grenades = new LinkedHashMap<>();
     public int armor;
     public boolean helmet;
+    /** Carrying a C4 (CS slot 5). */
+    public boolean hasBomb;
     public boolean csMode = true;
     public boolean initialized;
 
@@ -83,6 +85,7 @@ public final class CsState {
 
     public boolean hasSlot(int s) {
         if (s == SLOT_GRENADE) return grenades.values().stream().anyMatch(c -> c > 0);
+        if (s == SLOT_BOMB) return hasBomb;
         return weaponInSlot(s) != null;
     }
 

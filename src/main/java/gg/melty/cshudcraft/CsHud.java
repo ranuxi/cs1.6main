@@ -219,8 +219,23 @@ public final class CsHud {
         if (full > 0) spritePart(ctx, "flash_full", fx + fe.w() - full, fy, fe.w() - full, full, HUD, MIN_ALPHA * f);
         if (food >= 18) sprite(ctx, "flash_beam", fx - assets.region("flash_beam").w(), fy, HUD, MIN_ALPHA * f);
 
-        // CS damage-type icons, left middle
+        // carrying the C4: CS shows its icon on the left, green
         float iy = vh / 2f;
+        if (st.hasBomb && assets.region("c4") != null) {
+            sprite(ctx, "c4", fw / 2f, iy - assets.region("c4").h() - 8, GREEN, 0.95f * f);
+        }
+        // plant / defuse progress bar, CS style, above the round timer
+        float[] prog = ClientCs.actionProgress();
+        if (prog != null) {
+            int pw = Math.round(220 * s), ph = Math.max(4, Math.round(10 * s));
+            int px = gw / 2 - pw / 2, py = Math.round((vh - fh * 3.6f) * s);
+            ctx.fill(px - 1, py - 1, px + pw + 1, py + ph + 1, 0xFFFFA000);
+            ctx.fill(px, py, px + pw, py + ph, 0xC0000000);
+            ctx.fill(px, py, px + Math.round(pw * prog[0]), py + ph, 0xFFFFA000);
+            String label = Text.translatable(prog[1] == 0 ? "cshudcraft.hud.planting" : "cshudcraft.hud.defusing").getString();
+            ctx.drawCenteredTextWithShadow(mc.textRenderer, label, gw / 2, py - 11, 0xFFFFB400);
+        }
+        // CS damage-type icons, left middle
         for (String icon : statusIcons(p)) {
             sprite(ctx, icon, fw / 2f, iy, HUD, 0.85f * f);
             iy += assets.region(icon).h() + 6;
@@ -249,8 +264,9 @@ public final class CsHud {
             ctx.drawTexture(RenderPipelines.GUI_TEXTURED, t.id(), at[i][0], at[i][1], 0, 0, half, half, t.width(), t.height(), t.width(), t.height(), 0xFFFFFFFF);
         }
         if (!any) return;
-        ctx.fill(0, 0, x0, gh, 0xFF000000);
-        ctx.fill(x0 + size, 0, gw, gh, 0xFF000000);
+        // black outside the lens; overlap the arcs by a few pixels so no light seam shows at their edges
+        ctx.fill(0, 0, x0 + 2, gh, 0xFF000000);
+        ctx.fill(x0 + size - 2, 0, gw, gh, 0xFF000000);
         ctx.fill(x0, gh / 2, x0 + size, gh / 2 + 1, 0xFF000000);
         ctx.fill(gw / 2, 0, gw / 2 + 1, gh, 0xFF000000);
     }

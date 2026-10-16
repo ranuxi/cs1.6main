@@ -80,8 +80,17 @@ public final class ViewModelRenderer {
         if (l == null) return true;
         MdlModel m = l.model();
         float[][] bones = MdlPose.compute(m, anim.sequence(), anim.frame());
-        float[] knife = ClientCs.knifeInspect();
-        if (knife != null) MdlPose.turnSubtree(m, bones, MdlPose.findBone(m, "righthand"), knife[0], knife[1], knife[2], knife[3]);
+        float[] turn = ClientCs.boneInspect();
+        Sheets.Inspect row = ClientCs.boneInspectRow();
+        if (turn != null && row != null) {
+            for (String bn : row.bones()) {
+                int bi = MdlPose.findBone(m, bn);
+                if (bi < 0) continue;
+                float side = bones[bi][7] >= 0 ? 1f : -1f; // GoldSrc +Y is left: mirror each hand to its side
+                if (row.bones().length == 1) side = 1f;
+                MdlPose.turnSubtree(m, bones, bi, turn[0] * side, turn[1], turn[2] * side, turn[3]);
+            }
+        }
 
         matrices.push();
         if (!"keep".equals(System.getenv("CSHUDCRAFT_VMPOSE"))) {
@@ -89,6 +98,7 @@ public final class ViewModelRenderer {
             matrices.peek().getPositionMatrix().identity();
             matrices.peek().getNormalMatrix().identity();
         }
+        if (CsHudCraft.CONFIG.leftHanded()) matrices.scale(-1f, 1f, 1f); // CS cl_righthand 0: the viewmodel mirrored
         ClientCs.applyViewModelMotion(matrices, tickProgress);
         // GoldSrc view space (X forward, Y left, Z up) -> Minecraft view space (-Z forward, X right, Y up)
         Map<Integer, List<float[]>> byTexture = new HashMap<>();

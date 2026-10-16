@@ -1,0 +1,8 @@
+{
+  "_about": "How F (inspect) moves a weapon. CS 1.6 has no inspect animation, so this is procedural. mode 'bones': the listed bones (names in the CS model) and everything attached turn about their own origin; with several bones each one is mirrored to its side (GoldSrc +Y = left), so two hands turn symmetrically. Angles are degrees about the model's X (forward), Y (left) and Z (up); lift in model units. Weapons not listed tilt as a whole toward the viewer.",
+  "columns": ["id", "mode", "bones", "ax", "ay", "az", "lift"],
+  "rows": [
+    {"id": "knife", "mode": "bones", "bones": "righthand",      "ax": 0,   "ay": -30, "az": 40,  "lift": 1},
+    {"id": "elite", "mode": "bones", "bones": "bone02;bone25",  "ax": -60, "ay": -15, "az": -25, "lift": 1}
+  ]
+}

@@ -145,8 +145,17 @@ public final class ClientCs {
         }
 
         boolean trigger = (mc.currentScreen == null && mc.options.attackKey.isPressed()) || TestMode.trigger;
-        boolean alt = mc.currentScreen == null && mc.options.useKey.isPressed();
-        if (local.slot == CsState.SLOT_GRENADE) grenadeInput(p, trigger, now);
+        boolean alt = (mc.currentScreen == null && mc.options.useKey.isPressed()) || TestMode.alt;
+        // defusing takes the use key while looking at a planted C4 close by
+        C4Entity bomb = alt ? bombInSight(mc, p) : null;
+        if (bomb != null) {
+            defuseInput(bomb, now);
+            alt = false;
+        } else if (defuseStart >= 0) {
+            defuseStart = -1;
+        }
+        if (local.slot == CsState.SLOT_BOMB) bombInput(p, trigger, now);
+        else if (local.slot == CsState.SLOT_GRENADE) grenadeInput(p, trigger, now);
         else if (local.slot == CsState.SLOT_KNIFE) knifeInput(p, trigger, alt, now);
         else {
             if (trigger) fire(p, now);
@@ -168,7 +177,7 @@ public final class ClientCs {
         for (int i = 0; i < mc.options.hotbarKeys.length; i++) {
             while (mc.options.hotbarKeys[i].wasPressed()) {
                 if (i < 4) select(i + 1);
-                else if (i == 4) select(lastSlot);
+                else if (i == 4) select(local != null && local.hasBomb ? CsState.SLOT_BOMB : lastSlot);
             }
         }
     }
@@ -199,13 +208,14 @@ public final class ClientCs {
     private static void cycle(int dir) {
         if (local == null) return;
         int s = local.slot;
-        for (int i = 0; i < 4; i++) {
-            s = ((s - 1 + dir + 4) % 4) + 1;
+        for (int i = 0; i < 5; i++) {
+            s = ((s - 1 + dir + 5) % 5) + 1;
             if (local.hasSlot(s)) { select(s); return; }
         }
     }
 
     static String modelFor(CsState s) {
+        if (s.slot == CsState.SLOT_BOMB) return Sheets.EQUIPMENT.get("c4").model();
         if (s.slot == CsState.SLOT_GRENADE) {
             Sheets.Equipment g = Sheets.EQUIPMENT.get(s.currentGrenade());
             return g == null ? null : g.model();
@@ -226,8 +236,13 @@ public final class ClientCs {
         String model = modelFor(local);
         animModel = model;
         if (model == null) return;
+        plantStart = -1;
         String drawSeq, idle;
-        if (local.slot == CsState.SLOT_GRENADE) {
+        if (local.slot == CsState.SLOT_BOMB) {
+            Sheets.Equipment b = Sheets.EQUIPMENT.get("c4");
+            drawSeq = b.seqDraw();
+            idle = b.seqIdle();
+        } else if (local.slot == CsState.SLOT_GRENADE) {
             Sheets.Equipment g = Sheets.EQUIPMENT.get(local.currentGrenade());
             drawSeq = g.seqDraw();
             idle = g.seqIdle();
@@ -260,6 +275,7 @@ public final class ClientCs {
 
     private static String idleSeq() {
         if (local == null) return null;
+        if (local.slot == CsState.SLOT_BOMB) return Sheets.EQUIPMENT.get("c4").seqIdle();
         if (local.slot == CsState.SLOT_GRENADE) {
             Sheets.Equipment g = Sheets.EQUIPMENT.get(local.currentGrenade());
             return g == null ? null : g.seqIdle();
@@ -322,7 +338,7 @@ public final class ClientCs {
 
     /** Inspect (CS 1.6 has no inspect animation, so the weapon is turned toward you and back) and draw bob. */
     public static void applyViewModelMotion(MatrixStack m, float tickProgress) {
-        if (inspectStart < 0 || (local != null && local.slot == CsState.SLOT_KNIFE)) return;
+        if (inspectStart < 0 || boneInspectRow() != null) return;
         double t = (now() - inspectStart) / 2200.0;
         if (t >= 1) { inspectStart = -1; return; }
         // ease in, hold, ease out; the weapon turns about its own grip, so the hands stay in view
@@ -336,17 +352,24 @@ public final class ClientCs {
         m.translate(-px, -py + 0.03f * k, -pz);
     }
 
-    /**
-     * Knife inspect: the right hand alone turns the blade flat toward you and rocks it, then back
-     * (angles about GoldSrc X/Y/Z in degrees + lift), or null when not inspecting the knife.
-     */
-    public static float[] knifeInspect() {
-        if (inspectStart < 0 || local == null || local.slot != CsState.SLOT_KNIFE) return null;
+    /** inspect.json row for the weapon in hand, when its inspect turns hand bones. */
+    static Sheets.Inspect boneInspectRow() {
+        if (local == null) return null;
+        Sheets.Weapon w = local.current();
+        if (w == null || local.slot == CsState.SLOT_GRENADE) return null;
+        Sheets.Inspect row = Sheets.INSPECT.get(w.id());
+        return row != null && row.mode().equals("bones") ? row : null;
+    }
+
+    /** The bone turn of a bones-mode inspect at this moment: {ax, ay, az, lift}, or null. */
+    public static float[] boneInspect() {
+        Sheets.Inspect row = boneInspectRow();
+        if (inspectStart < 0 || row == null) return null;
         double t = (now() - inspectStart) / 2200.0;
         if (t >= 1) { inspectStart = -1; return null; }
         float k = (float) (t < 0.25 ? Math.sin(t / 0.25 * Math.PI / 2) : t > 0.8 ? Math.cos((t - 0.8) / 0.2 * Math.PI / 2) : 1);
         float rock = (float) Math.sin((t - 0.25) / 0.55 * Math.PI * 2) * (t > 0.25 && t < 0.8 ? 1 : 0);
-        return new float[]{8f * rock * k, -30f * k, 40f * k - 12f * rock * k, 1f * k};
+        return new float[]{row.ax() * k + 8f * rock * k, row.ay() * k, row.az() * k - 12f * rock * k, row.lift() * k};
     }
 
     static void inspect() {
@@ -476,7 +499,7 @@ public final class ClientCs {
         }
     }
 
-    private static void altFire() {
+    static void altFire() {
         Sheets.Weapon w = local.current();
         if (w == null || !w.canZoom() || reloadStage != 0) return;
         zoomed = !zoomed;
@@ -612,6 +635,59 @@ public final class ClientCs {
                 drawUntil = nextShot;
             }
         }
+    }
+
+    // ------------------------------------------------------------------ C4
+
+    private static double plantStart = -1, defuseStart = -1;
+    private static int defuseId = -1;
+    static final double PLANT_MS = 3030, DEFUSE_MS = 10000;
+
+    /** Hold fire on the ground for the whole pressbutton animation; letting go or moving cancels. */
+    private static void bombInput(ClientPlayerEntity p, boolean trigger, double now) {
+        if (now < drawUntil) return;
+        boolean still = p.isOnGround() && p.getVelocity().horizontalLength() < 0.05;
+        if (trigger && still) {
+            if (plantStart < 0) {
+                plantStart = now;
+                play(Sheets.EQUIPMENT.get("c4").seqPull(), false);
+                send("plant_start", "c4");
+            } else if (now - plantStart >= PLANT_MS) {
+                plantStart = -1;
+                send("plant", "c4");
+                local.hasBomb = false;
+                int back = local.hasSlot(CsState.SLOT_PRIMARY) ? CsState.SLOT_PRIMARY : local.hasSlot(CsState.SLOT_PISTOL) ? CsState.SLOT_PISTOL : CsState.SLOT_KNIFE;
+                select(back);
+            }
+        } else if (plantStart >= 0) {
+            plantStart = -1;
+            play(Sheets.EQUIPMENT.get("c4").seqIdle(), true);
+        }
+    }
+
+    private static C4Entity bombInSight(MinecraftClient mc, ClientPlayerEntity p) {
+        if (mc.crosshairTarget instanceof EntityHitResult eh && eh.getEntity() instanceof C4Entity b
+                && p.getEyePos().distanceTo(b.getEntityPos()) <= 2.8) return b;
+        return null;
+    }
+
+    private static void defuseInput(C4Entity bomb, double now) {
+        if (defuseStart < 0 || defuseId != bomb.getId()) {
+            defuseStart = now;
+            defuseId = bomb.getId();
+            send("defuse_start", "c4", bomb.getId());
+        } else if (now - defuseStart >= DEFUSE_MS) {
+            send("defuse_finish", "c4", bomb.getId());
+            defuseStart = -1;
+        }
+    }
+
+    /** Plant or defuse progress for the HUD bar: {fraction, 0 = plant / 1 = defuse}, or null. */
+    public static float[] actionProgress() {
+        double now = now();
+        if (plantStart >= 0) return new float[]{(float) Math.min(1, (now - plantStart) / PLANT_MS), 0};
+        if (defuseStart >= 0) return new float[]{(float) Math.min(1, (now - defuseStart) / DEFUSE_MS), 1};
+        return null;
     }
 
     // ------------------------------------------------------------------ server events

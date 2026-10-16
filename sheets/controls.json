@@ -6,12 +6,14 @@
     {"id": "fire",         "default": "attack (LMB)","mode": "cs",    "action": "shoot / knife slash / throw grenade (hold for automatic weapons)"},
     {"id": "alt",          "default": "use (RMB)",   "mode": "cs",    "action": "knife stab, scope zoom on sniper/AUG/SG552"},
     {"id": "reload",       "default": "R",           "mode": "cs",    "action": "reload"},
+    {"id": "hand",         "default": "H",           "mode": "cs",    "action": "switch the weapon to the left / right hand (CS cl_righthand), remembered"},
     {"id": "inspect",      "default": "F",           "mode": "cs",    "action": "inspect weapon (procedural twirl; CS 1.6 has no inspect animation)"},
     {"id": "buy",          "default": "B",           "mode": "cs",    "action": "open buy menu anywhere"},
     {"id": "buy_primary_ammo",   "default": ",",     "mode": "cs",    "action": "buy one pack of primary ammo"},
     {"id": "buy_secondary_ammo", "default": ".",     "mode": "cs",    "action": "buy one pack of pistol ammo"},
     {"id": "slot_1_4",     "default": "hotbar 1-4",  "mode": "cs",    "action": "primary / pistol / knife / grenade"},
-    {"id": "last_weapon",  "default": "hotbar 5",    "mode": "cs",    "action": "previous weapon (CS 'lastinv' on Q is left to Minecraft's drop)"},
+    {"id": "last_weapon",  "default": "hotbar 5",    "mode": "cs",    "action": "C4 when carrying it (CS slot 5), otherwise the previous weapon"},
+    {"id": "defuse",       "default": "use (RMB) held","mode": "cs",  "action": "hold on a planted C4 within 2.5 blocks for 10 s to defuse it"},
     {"id": "scroll",       "default": "mouse wheel", "mode": "cs",    "action": "next / previous weapon"}
   ]
 }
