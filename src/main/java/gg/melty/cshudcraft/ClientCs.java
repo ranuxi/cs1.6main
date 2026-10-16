@@ -134,6 +134,7 @@ public final class ClientCs {
 
         while (CsHudCraft.RELOAD.wasPressed()) startReload();
         while (CsHudCraft.INSPECT.wasPressed()) inspect();
+        while (CsHudCraft.FLASHLIGHT.wasPressed()) send("flashlight", "");
         while (CsHudCraft.BUY.wasPressed()) mc.setScreen(new BuyScreen());
         while (CsHudCraft.AMMO_PRIMARY.wasPressed()) send("buy", "ammo_primary");
         while (CsHudCraft.AMMO_SECONDARY.wasPressed()) send("buy", "ammo_secondary");

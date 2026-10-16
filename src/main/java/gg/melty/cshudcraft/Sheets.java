@@ -51,6 +51,7 @@ public final class Sheets {
     public static final Map<String, Award> AWARDS = new LinkedHashMap<>();
     public static final Map<String, Double> ECONOMY = new LinkedHashMap<>();
     public static final Map<String, Double> BLOCK_SETTINGS = new LinkedHashMap<>();
+    public static final Map<String, Double> FLASH = new LinkedHashMap<>();
     public static final Map<String, Inspect> INSPECT = new LinkedHashMap<>();
     /** block_durability.json overrides: block id -> CS hp. */
     public static final Map<String, Integer> BLOCK_HP = new LinkedHashMap<>();
@@ -109,12 +110,23 @@ public final class Sheets {
             JsonObject r = e.getAsJsonObject();
             BLOCK_HP.put(s(r, "id"), i(r, "hp"));
         }
+        for (JsonElement e : rows(read("systems").getAsJsonObject("flashlight"))) {
+            JsonObject r = e.getAsJsonObject();
+            FLASH.put(s(r, "key"), r.get("value").getAsDouble());
+        }
         CsHudCraft.LOG.info("[CSHudCraft] Sheets: {} weapons, {} ammo types, {} equipment, {} block overrides", WEAPONS.size(), AMMO.size(), EQUIPMENT.size(), BLOCK_HP.size());
     }
 
     public static double eco(String key) {
         Double v = ECONOMY.get(key);
         if (v == null) throw new IllegalStateException("economy.json has no " + key);
+        return v;
+    }
+
+    /** systems.json "flashlight". */
+    public static double flash(String key) {
+        Double v = FLASH.get(key);
+        if (v == null) throw new IllegalStateException("systems.json flashlight has no " + key);
         return v;
     }
 

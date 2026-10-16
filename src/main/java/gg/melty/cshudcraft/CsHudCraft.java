@@ -48,7 +48,7 @@ public class CsHudCraft implements ClientModInitializer {
 
     // sheets/controls.json
     private static final KeyBinding.Category CATEGORY = KeyBinding.Category.create(Identifier.of(MOD_ID, "main"));
-    public static KeyBinding TOGGLE, RELOAD, INSPECT, BUY, AMMO_PRIMARY, AMMO_SECONDARY, HAND;
+    public static KeyBinding TOGGLE, RELOAD, INSPECT, FLASHLIGHT, BUY, AMMO_PRIMARY, AMMO_SECONDARY, HAND;
 
     private static boolean enabled = true;
     private static int csFrames;
@@ -73,7 +73,9 @@ public class CsHudCraft implements ClientModInitializer {
         enabled = CONFIG.enabled();
         TOGGLE = key("toggle", GLFW.GLFW_KEY_F6);
         RELOAD = key("reload", GLFW.GLFW_KEY_R);
-        INSPECT = key("inspect", GLFW.GLFW_KEY_F);
+        FLASHLIGHT = key("flashlight", GLFW.GLFW_KEY_F);
+        // a new id, so a saved F from 1.1.0 and older does not clash with the flashlight
+        INSPECT = key("inspect_weapon", GLFW.GLFW_KEY_G);
         BUY = key("buy", GLFW.GLFW_KEY_B);
         AMMO_PRIMARY = key("ammo_primary", GLFW.GLFW_KEY_COMMA);
         AMMO_SECONDARY = key("ammo_secondary", GLFW.GLFW_KEY_PERIOD);

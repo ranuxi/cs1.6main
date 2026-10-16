@@ -210,14 +210,13 @@ public final class CsHud {
             ctx.drawCenteredTextWithShadow(mc.textRenderer, levelUpText, gw / 2, gh / 3, 0xFF60FF60);
         }
 
-        // flashlight = hunger
-        int food = p.getHungerManager().getFoodLevel();
+        // flashlight battery, with the beam while it is on
         CsAssets.Region fe = assets.region("flash_empty");
         float fx = vw - fe.w() - fw / 2f, fy = fh / 2f;
         sprite(ctx, "flash_empty", fx, fy, HUD, MIN_ALPHA * f);
-        int full = Math.round(fe.w() * food / 20f);
+        int full = Math.round(fe.w() * MathHelper.clamp(st.battery, 0, 100) / 100f);
         if (full > 0) spritePart(ctx, "flash_full", fx + fe.w() - full, fy, fe.w() - full, full, HUD, MIN_ALPHA * f);
-        if (food >= 18) sprite(ctx, "flash_beam", fx - assets.region("flash_beam").w(), fy, HUD, MIN_ALPHA * f);
+        if (st.flashlight) sprite(ctx, "flash_beam", fx - assets.region("flash_beam").w(), fy, HUD, MIN_ALPHA * f);
 
         // carrying the C4: CS shows its icon on the left, green
         float iy = vh / 2f;

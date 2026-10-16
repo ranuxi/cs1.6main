@@ -25,6 +25,16 @@
       {"id": "item_name",  "element": "VanillaHudElements.HELD_ITEM_TOOLTIP"}
     ]
   },
+  "flashlight": {
+    "_about": "CS 1.6 flashlight (F): a battery of 100 drains 1 per drainSeconds while on and charges 1 per chargeSeconds while off (Half-Life FLASH_DRAIN_TIME 1.2 / FLASH_CHARGE_TIME 0.2). The spot is a Minecraft light block where the beam ends, level 15 up close fading to farLevel at rangeBlocks (CS traces 2048 units, about 51 blocks).",
+    "columns": ["key", "value", "use"],
+    "rows": [
+      {"key": "drainSeconds",  "value": 1.2, "use": "seconds per 1% of battery while on"},
+      {"key": "chargeSeconds", "value": 0.2, "use": "seconds per 1% of battery while off"},
+      {"key": "rangeBlocks",   "value": 48,  "use": "how far the beam reaches"},
+      {"key": "farLevel",      "value": 7,   "use": "light level of the spot at the end of the range"}
+    ]
+  },
   "settings": {
     "_about": "Keys in %LOCALAPPDATA%/CSHudCraft/cshudcraft.properties.",
     "columns": ["key", "set_by", "default", "use"],
@@ -46,7 +56,8 @@
       {"id": "c4-defuse",       "passes_when": "holding use on the planted C4 for 10 s defuses it"},
       {"id": "mode-toggle",     "passes_when": "F6 shows Minecraft's HUD, F6 again brings the CS HUD back with money and weapons unchanged"},
       {"id": "third-person-weapon", "passes_when": "in third person the Deagle in hand is synced (CsNet.HELD) and drawn with CS's p_deagle.mdl for 20 frames"},
-      {"id": "open-to-others",  "passes_when": "the test world is opened to others and a join address is written to melty.log (e4mc relay domain, or the LAN address)"}
+      {"id": "open-to-others",  "passes_when": "the test world is opened to others and a join address is written to melty.log (e4mc relay domain, or the LAN address)"},
+      {"id": "flashlight",      "passes_when": "F turns the flashlight on, a light block lights the wall the player looks at, the battery drains, and F again takes the light away"}
     ]
   },
   "keys": {

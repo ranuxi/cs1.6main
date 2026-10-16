@@ -42,6 +42,9 @@ public final class TestMode {
     static final String SLUG = "cs-1-6-craft";
 
     private static boolean active;
+
+    /** A Melty test run (or a dev check) is driving this copy: it plays its own world. */
+    static boolean active() { return active; }
     private static long seed;
     private static Path checksFile;
     private static final Set<String> reported = new HashSet<>();
@@ -63,12 +66,14 @@ public final class TestMode {
     private static final boolean SHOTS = "1".equals(System.getenv("CSHUDCRAFT_SHOTS"));
     /** Dev check only: CSHUDCRAFT_POSE=1 makes a world and screenshots every CS weapon held in third person. */
     private static final boolean POSE = "1".equals(System.getenv("CSHUDCRAFT_POSE"));
+    /** Dev check only: CSHUDCRAFT_FLASH=1 goes straight to the flashlight at night and screenshots it. */
+    private static final boolean FLASH = "1".equals(System.getenv("CSHUDCRAFT_FLASH"));
     private static final String[] POSES = {"ak47", "awp", "m249", "usp", "deagle", "elite", "knife", "hegrenade", "c4"};
 
     static boolean shotsMode() { return SHOTS; }
 
     private static void shot(MinecraftClient c, String name) {
-        if (!SHOTS && !POSE) return;
+        if (!SHOTS && !POSE && !FLASH) return;
         net.minecraft.client.util.ScreenshotRecorder.saveScreenshot(c.runDirectory, "cs_" + name + ".png", c.getFramebuffer(), 1, t -> { });
     }
 
@@ -77,7 +82,7 @@ public final class TestMode {
     static void init() {
         String local = System.getenv("LOCALAPPDATA");
         if (local == null) return;
-        if (POSE) {
+        if (POSE || FLASH) {
             seed = 1L;
             checksFile = Paths.get(System.getProperty("java.io.tmpdir"), "cshudcraft-pose-checks.txt");
             active = true;
@@ -144,7 +149,7 @@ public final class TestMode {
                 if (!CsHudCraft.enabled()) CsHudCraft.setEnabled(true, false);
                 ClientCs.select(CsState.SLOT_KNIFE);
                 mark = ViewModelRenderer.framesDrawn();
-                next(POSE ? 60 : 1, 0);
+                next(POSE ? 60 : FLASH ? 53 : 1, 0);
             }
             case 1 -> {
                 if (ViewModelRenderer.framesDrawn() - mark >= 40) { report("viewmodel-drawn", null); shot(c, "1_knife"); next(2, 20); }
@@ -270,9 +275,60 @@ public final class TestMode {
             }
             case 52 -> { // the world is open to others and Melty has an address to hand out
                 String a = MeltyLink.address();
-                if (a != null) { report("open-to-others", null); next(SHOTS ? 20 : 99, 0); }
-                else if (!MeltyLink.hosting()) { report("open-to-others", "this copy was started to join a game"); next(SHOTS ? 20 : 99, 0); }
-                else if (stageTicks > 70 * 20) { report("open-to-others", "no join address after 70 s"); next(SHOTS ? 20 : 99, 0); }
+                if (a != null) { report("open-to-others", null); next(53, 0); }
+                else if (!MeltyLink.hosting()) { report("open-to-others", "this copy was started to join a game"); next(53, 0); }
+                else if (stageTicks > 70 * 20) { report("open-to-others", "no join address after 70 s"); next(53, 0); }
+            }
+            case 53 -> { // the flashlight: F on, a light spot where the player looks, the battery drains
+                if (stageTicks == 1) {
+                    server.execute(() -> {
+                        ServerPlayerEntity sp = serverPlayer(c);
+                        if (sp == null) return;
+                        ServerWorld w = sp.getEntityWorld();
+                        if (FLASH) w.setTimeOfDay(18000);
+                        // a stone wall 4 blocks ahead to shine on
+                        Vec3d look = Vec3d.fromPolar(0, sp.getYaw());
+                        net.minecraft.util.math.BlockPos wall = net.minecraft.util.math.BlockPos.ofFloored(sp.getEyePos().add(look.multiply(4)));
+                        for (int dy = -2; dy <= 2; dy++) for (int dx = -2; dx <= 2; dx++)
+                            w.setBlockState(wall.add(look.z != 0 ? dx : 0, dy, look.x != 0 ? dx : 0), net.minecraft.block.Blocks.STONE.getDefaultState());
+                        // nothing between the player and the wall
+                        net.minecraft.util.math.BlockPos feet = sp.getBlockPos();
+                        for (int k = 1; k <= 3; k++) for (int dy = 0; dy <= 2; dy++) for (int dx = -2; dx <= 2; dx++) {
+                            net.minecraft.util.math.BlockPos at = feet.add((int) Math.round(look.x * k) + (look.z != 0 ? dx : 0), dy, (int) Math.round(look.z * k) + (look.x != 0 ? dx : 0));
+                            w.setBlockState(at, net.minecraft.block.Blocks.AIR.getDefaultState());
+                        }
+                    });
+                    p.setPitch(0f);
+                }
+                if (stageTicks == 18) shot(c, "8a_flashlight_off"); // still day on the first ticks: compare with 8b only for the HUD
+                if (stageTicks == 20) { mark = st.battery; ClientCs.send("flashlight", ""); }
+                if (stageTicks == 70) {
+                    ServerPlayerEntity sp = serverPlayer(c);
+                    boolean lit = sp != null && net.minecraft.util.math.BlockPos.stream(sp.getBlockPos().add(-1, -1, -1), sp.getBlockPos().add(1, 2, 1).add(net.minecraft.util.math.BlockPos.ofFloored(Vec3d.fromPolar(0, sp.getYaw()).multiply(5))))
+                            .anyMatch(bp -> sp.getEntityWorld().getBlockState(bp).isOf(net.minecraft.block.Blocks.LIGHT));
+                    if (!st.flashlight) report("flashlight", "F did not turn the flashlight on");
+                    else if (!lit) report("flashlight", "no light spot in front of the player");
+                    shot(c, "8b_flashlight_on");
+                    if (sp != null) net.minecraft.util.math.BlockPos.stream(sp.getBlockPos().add(-8, -4, -8), sp.getBlockPos().add(8, 6, 8))
+                            .filter(bp -> sp.getEntityWorld().getBlockState(bp).isOf(net.minecraft.block.Blocks.LIGHT))
+                            .forEach(bp -> CsHudCraft.LOG.info("[CSHudCraft] test: light block at {} (player {}), server {}, client block {} light {}", bp.toShortString(), sp.getBlockPos().toShortString(),
+                                    sp.getEntityWorld().getBlockState(bp), c.world.getBlockState(bp), c.world.getLightLevel(net.minecraft.world.LightType.BLOCK, bp)));
+                    next(54, 0);
+                }
+            }
+            case 54 -> { // battery drains while on; F again takes the light away
+                if (stageTicks == 60) {
+                    if (st.battery >= mark) report("flashlight", "battery did not drain (" + st.battery + ")");
+                    ClientCs.send("flashlight", "");
+                }
+                if (stageTicks == 80) {
+                    ServerPlayerEntity sp = serverPlayer(c);
+                    boolean lit = sp != null && net.minecraft.util.math.BlockPos.stream(sp.getBlockPos().add(-8, -4, -8), sp.getBlockPos().add(8, 6, 8))
+                            .anyMatch(bp -> sp.getEntityWorld().getBlockState(bp).isOf(net.minecraft.block.Blocks.LIGHT));
+                    if (st.flashlight || lit) report("flashlight", "the light stayed after turning it off");
+                    else report("flashlight", null);
+                    next(FLASH ? 99 : SHOTS ? 20 : 99, 0);
+                }
             }
             case 60 -> { // dev pose check (CSHUDCRAFT_POSE=1): each CS weapon in hand, seen from the front and from behind
                 if (stageTicks == 1) {

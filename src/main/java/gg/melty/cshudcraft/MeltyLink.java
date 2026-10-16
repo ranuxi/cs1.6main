@@ -98,7 +98,7 @@ final class MeltyLink {
     // ---------------------------------------------------------------- joining
 
     static void onScreen(MinecraftClient client, Screen screen) {
-        if (!join.isEmpty() && !joinStarted && screen instanceof TitleScreen) {
+        if (!join.isEmpty() && !joinStarted && screen instanceof TitleScreen && !TestMode.active()) {
             joinStarted = true;
             joinPending = true;
             client.execute(() -> ConnectScreen.connect(screen, client, ServerAddress.parse(join),

@@ -33,6 +33,9 @@ public final class CsState {
     public boolean helmet;
     /** Carrying a C4 (CS slot 5). */
     public boolean hasBomb;
+    /** CS flashlight (F) on, and its battery 0-100 (systems.json "flashlight"). */
+    public boolean flashlight;
+    public int battery = 100;
     public boolean csMode = true;
     public boolean initialized;
 

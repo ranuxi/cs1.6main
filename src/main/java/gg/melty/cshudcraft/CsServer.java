@@ -102,6 +102,8 @@ public final class CsServer implements ModInitializer {
             s.primary = "";
             s.grenades.clear();
             s.hasBomb = false;
+            s.flashlight = false;
+            s.battery = 100;
             s.armor = 0;
             s.helmet = false;
             s.giveStartLoadout();
@@ -109,6 +111,8 @@ public final class CsServer implements ModInitializer {
             live(newPlayer).aliveSinceDusk = false;
         });
         ServerLivingEntityEvents.AFTER_DEATH.register(CsServer::onDeath);
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> Flashlight.forget(handler.player));
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STOPPING.register(Flashlight::removeAll);
         PlayerBlockBreakEvents.AFTER.register((world, player, pos, st, be) -> {
             if (player instanceof ServerPlayerEntity sp && isPrecious(st)) award(sp, "ore_mined", 0);
         });
@@ -201,7 +205,12 @@ public final class CsServer implements ModInitializer {
         Live live = live(p);
         long now = System.currentTimeMillis();
         switch (a.action()) {
-            case "mode" -> { s.csMode = a.arg().equals("cs"); save(p, s); }
+            case "mode" -> {
+                s.csMode = a.arg().equals("cs");
+                if (!s.csMode) Flashlight.off(p, s);
+                save(p, s);
+            }
+            case "flashlight" -> Flashlight.toggle(p, s);
             case "select" -> {
                 int slot = a.nums().isEmpty() ? s.slot : Math.round(a.nums().get(0));
                 if (s.hasSlot(slot)) {
@@ -520,7 +529,10 @@ public final class CsServer implements ModInitializer {
 
     private static void onDeath(LivingEntity victim, DamageSource source) {
         LastHit lh = LAST_HIT.remove(victim.getUuid());
-        if (victim instanceof ServerPlayerEntity vp) live(vp).aliveSinceDusk = false;
+        if (victim instanceof ServerPlayerEntity vp) {
+            live(vp).aliveSinceDusk = false;
+            Flashlight.off(vp, state(vp));
+        }
         if (lh == null || System.currentTimeMillis() - lh.at() > 5000) {
             KillFeed.onDeath(victim, source);
             return;
@@ -553,6 +565,7 @@ public final class CsServer implements ModInitializer {
             online.add(p.getUuid());
             CsState s = state(p);
             applySpeed(p, s);
+            Flashlight.tick(p, s);
             Live live = live(p);
             if (lastTimeOfDay >= 0) {
                 if (lastTimeOfDay < 13000 && tod >= 13000 && p.isAlive()) live.aliveSinceDusk = true;
