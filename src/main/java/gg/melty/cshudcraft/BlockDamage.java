@@ -42,8 +42,13 @@ public final class BlockDamage {
         return (float) (Sheets.block("base") + Sheets.block("scale") * Math.pow(hardness, Sheets.block("exponent")));
     }
 
-    /** Adds CS damage to a block; breaks it when its hp is used up. */
+    /** Adds CS damage to a block; breaks it (dropping like mining) when its hp is used up. */
     public static void damage(ServerPlayerEntity by, ServerWorld w, BlockPos pos, float cs) {
+        damage(by, w, pos, cs, 1f);
+    }
+
+    /** dropChance: explosions drop only some of what they break, like vanilla TNT, so a crater doesn't flood the world with items. */
+    public static void damage(ServerPlayerEntity by, ServerWorld w, BlockPos pos, float cs, float dropChance) {
         if (Sheets.block("enabled") < 0.5 || cs <= 0) return;
         if (by != null && (!by.canModifyBlocks() || !w.canEntityModifyAt(by, pos))) return;
         BlockState st = w.getBlockState(pos);
@@ -56,7 +61,16 @@ public final class BlockDamage {
         if (hit.damage >= hp) {
             HITS.remove(key);
             w.setBlockBreakingInfo(hit.crackId, pos, -1);
-            w.breakBlock(pos, true, by, 512);
+            if (dropChance >= 1f) {
+                w.breakBlock(pos, true, by, 512);
+            } else {
+                // explosions: no per-block sound and particles (the blast has its own), so a crater doesn't flood
+                // the sound engine; only some blocks drop, like vanilla TNT
+                if (w.random.nextFloat() < dropChance) {
+                    net.minecraft.block.Block.dropStacks(st, w, pos, w.getBlockEntity(pos), by, net.minecraft.item.ItemStack.EMPTY);
+                }
+                w.removeBlock(pos, false);
+            }
         } else {
             w.setBlockBreakingInfo(hit.crackId, pos, Math.min(9, (int) (hit.damage / hp * 10)));
         }

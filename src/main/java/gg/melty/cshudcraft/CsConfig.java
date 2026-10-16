@@ -44,7 +44,8 @@ public final class CsConfig {
     public String csDir() { return props.getProperty("cs_dir", "").trim(); }
     public boolean enabled() { return !"false".equalsIgnoreCase(props.getProperty("enabled", "true")); }
     public void setEnabled(boolean on) { props.setProperty("enabled", Boolean.toString(on)); save(); }
-    /** CS cl_righthand 0: weapon in the left hand. */
-    public boolean leftHanded() { return "true".equalsIgnoreCase(props.getProperty("left_hand", "false")); }
-    public void setLeftHanded(boolean left) { props.setProperty("left_hand", Boolean.toString(left)); save(); }
+    /** CS cl_righthand 0: weapon in the left hand. Every start is right-handed; H switches for this session only. */
+    private boolean leftHand;
+    public boolean leftHanded() { return leftHand; }
+    public void setLeftHanded(boolean left) { leftHand = left; }
 }

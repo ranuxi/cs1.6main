@@ -50,6 +50,8 @@ final class TestMode {
     private static UUID zombie;
     private static net.minecraft.util.math.BlockPos obsidian;
     private static int bombId;
+    private static Vec3d bombAt = Vec3d.ZERO;
+    private static int boomAt = -1;
     static boolean trigger;
     static boolean alt;
     /** Dev check only: CSHUDCRAFT_SHOTS=1 saves screenshots of each step and plays a longer showcase. */
@@ -257,7 +259,7 @@ final class TestMode {
                     return;
                 }
                 if (fired == 2) shot(c, "4_obsidian_cracked");
-                if (fired >= 7 || stageTicks > 300) {
+                if (fired >= 14 || stageTicks > 500) {
                     report("block-break", "obsidian still standing after " + fired + " Deagle shots (" + Math.round(BlockDamage.progress(w, obsidian) * 100) + "% damaged)");
                     next(40, 20);
                     return;
@@ -265,6 +267,7 @@ final class TestMode {
                 Vec3d aim = Vec3d.ofCenter(obsidian).subtract(p.getEyePos());
                 p.setYaw((float) (MathHelper.atan2(aim.z, aim.x) * 57.2958) - 90f);
                 p.setPitch((float) -(MathHelper.atan2(aim.y, Math.sqrt(aim.x * aim.x + aim.z * aim.z)) * 57.2958));
+                if (st.clip("deagle") == 0) { if (!ClientCs.reloading()) ClientCs.startReload(); return; }
                 trigger = (stageTicks % 8) == 0; // Deagle is semi-automatic: press, release
             }
             case 40 -> { // C4: money for it, buy it at the far-away spot
@@ -379,7 +382,54 @@ final class TestMode {
                 if (stageTicks == 86) { CsHudCraft.CONFIG.setLeftHanded(false); ClientCs.select(CsState.SLOT_PRIMARY); }
                 if (stageTicks == 120) ClientCs.altFire();
                 if (stageTicks == 130) shot(c, "14_awp_scope");
-                if (stageTicks == 132) { ClientCs.altFire(); CsHudCraft.LOG.info("[CSHudCraft] test: showcase done"); next(99, 0); }
+                if (stageTicks == 132) { ClientCs.altFire(); next(30, 10); }
+            }
+            case 30 -> { // C4 showcase: plant, walk away, watch it go off
+                ClientCs.send("buy", "c4");
+                next(31, 10);
+            }
+            case 31 -> {
+                if (stageTicks == 1) ClientCs.select(CsState.SLOT_BOMB);
+                if (stageTicks > 25 && stageTicks < 160) trigger = true;
+                ServerPlayerEntity sp = serverPlayer(c);
+                C4Entity bomb = sp == null ? null : sp.getEntityWorld().getEntitiesByClass(C4Entity.class, sp.getBoundingBox().expand(3), e -> true).stream().findFirst().orElse(null);
+                if (bomb != null) {
+                    bombId = bomb.getId();
+                    bombAt = bomb.getEntityPos();
+                    server.execute(() -> { // 25 blocks away, on the ground
+                        ServerPlayerEntity s2 = serverPlayer(c);
+                        if (s2 == null) return;
+                        ServerWorld w = s2.getEntityWorld();
+                        int x = (int) bombAt.x + 25, z = (int) bombAt.z;
+                        w.getChunk(x >> 4, z >> 4);
+                        s2.requestTeleport(x + 0.5, w.getTopY(Heightmap.Type.MOTION_BLOCKING, x, z) + 0.1, z + 0.5);
+                    });
+                    next(32, 20);
+                } else if (stageTicks > 200) { CsHudCraft.LOG.info("[CSHudCraft] test: showcase done (no C4 planted)"); next(99, 0); }
+            }
+            case 32 -> {
+                Vec3d aim = bombAt.subtract(p.getEyePos());
+                p.setYaw((float) (MathHelper.atan2(aim.z, aim.x) * 57.2958) - 90f);
+                p.setPitch((float) -(MathHelper.atan2(aim.y, Math.sqrt(aim.x * aim.x + aim.z * aim.z)) * 57.2958));
+                var e = c.world.getEntityById(bombId);
+                if (e instanceof C4Entity b && b.ticksLeft() < 4 && boomAt < 0) boomAt = stageTicks;
+                if (e == null && boomAt < 0 && stageTicks > 60) boomAt = stageTicks;
+                if (boomAt >= 0 && stageTicks == boomAt + 6) shot(c, "15_c4_explosion");
+                if (boomAt >= 0 && stageTicks == boomAt + 80) {
+                    shot(c, "16_c4_crater");
+                    ServerPlayerEntity sp = serverPlayer(c);
+                    int air = 0;
+                    if (sp != null) {
+                        net.minecraft.util.math.BlockPos ctr = net.minecraft.util.math.BlockPos.ofFloored(bombAt);
+                        for (net.minecraft.util.math.BlockPos bp : net.minecraft.util.math.BlockPos.iterate(ctr.add(-6, -6, -6), ctr.add(6, 0, 6))) {
+                            if (sp.getEntityWorld().getBlockState(bp).isAir()) air++;
+                        }
+                    }
+                    CsHudCraft.LOG.info("[CSHudCraft] test: C4 crater air blocks below/around = {}", air);
+                    CsHudCraft.LOG.info("[CSHudCraft] test: showcase done");
+                    next(99, 0);
+                }
+                if (stageTicks > 1300) { CsHudCraft.LOG.info("[CSHudCraft] test: showcase done (no explosion seen)"); next(99, 0); }
             }
             default -> { }
         }

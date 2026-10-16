@@ -27,7 +27,8 @@ import java.util.UUID;
  */
 public class C4Entity extends Entity {
     public static final int FUSE_TICKS = 45 * 20;
-    static final double RADIUS = 12, BLOCK_RADIUS = 5;
+    /** Players and mobs within RADIUS are hurt (CS_DAMAGE at the center) and thrown back; blocks within BLOCK_RADIUS take BLOCK_DAMAGE at the center. */
+    static final double RADIUS = 20, BLOCK_RADIUS = 8, CS_DAMAGE = 800, BLOCK_DAMAGE = 1800, KNOCKBACK = 2.6;
     private static final TrackedData<Integer> TICKS_LEFT = DataTracker.registerData(C4Entity.class, TrackedDataHandlerRegistry.INTEGER);
 
     UUID planter;
@@ -72,31 +73,41 @@ public class C4Entity extends Entity {
 
     private void explode(ServerWorld w) {
         Vec3d c = getEntityPos().add(0, 0.3, 0);
-        for (int i = 0; i < 6; i++) {
-            w.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, c.x + random.nextGaussian() * 2, c.y + random.nextDouble() * 2, c.z + random.nextGaussian() * 2, 1, 0, 0, 0, 0);
+        // a big CS C4 blast: a ring of explosions, fire and smoke, heard far away
+        for (int i = 0; i < 14; i++) {
+            double a = i / 14.0 * Math.PI * 2, r = 2 + random.nextDouble() * 4;
+            w.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, c.x + Math.cos(a) * r, c.y + random.nextDouble() * 3, c.z + Math.sin(a) * r, 1, 0, 0, 0, 0);
         }
-        w.spawnParticles(ParticleTypes.LARGE_SMOKE, c.x, c.y + 1, c.z, 80, 3, 2, 3, 0.05);
-        CsServer.soundAround(w, c, "weapons/c4_explode1.wav", 1f, null, 200);
+        w.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, c.x, c.y + 1, c.z, 3, 0.5, 0.5, 0.5, 0);
+        w.spawnParticles(ParticleTypes.FLAME, c.x, c.y + 1, c.z, 200, 4, 2, 4, 0.15);
+        w.spawnParticles(ParticleTypes.LARGE_SMOKE, c.x, c.y + 2, c.z, 200, 6, 3, 6, 0.08);
+        w.spawnParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, c.x, c.y + 3, c.z, 60, 4, 2, 4, 0.02);
+        CsServer.soundAround(w, c, "weapons/c4_explode1.wav", 1f, null, 300);
         ServerPlayerEntity owner = planter == null ? null : w.getServer().getPlayerManager().getPlayer(planter);
         for (LivingEntity e : w.getEntitiesByClass(LivingEntity.class, new Box(c, c).expand(RADIUS), LivingEntity::isAlive)) {
-            double d = e.getBoundingBox().getCenter().distanceTo(c);
+            Vec3d at = e.getBoundingBox().getCenter();
+            double d = at.distanceTo(c);
             if (d > RADIUS) continue;
-            float cs = (float) (500 * (1 - d / RADIUS));
+            double k = 1 - d / RADIUS;
+            float cs = (float) (CS_DAMAGE * k);
             CsServer.recordGrenadeHit(owner, e, "c4");
             e.timeUntilRegen = 0;
             Entity src = owner != null ? owner : this;
             e.damage(w, w.getDamageSources().explosion(this, src), cs * (float) Sheets.eco("damageScale"));
+            // shockwave: thrown away from the bomb and up
+            Vec3d push = at.subtract(c).normalize().multiply(KNOCKBACK * k).add(0, 0.6 * k, 0);
+            e.addVelocity(push.x, push.y, push.z);
+            e.velocityDirty = true;
         }
         BlockPos center = BlockPos.ofFloored(c);
         int r = (int) Math.ceil(BLOCK_RADIUS);
         for (BlockPos bp : BlockPos.iterate(center.add(-r, -r, -r), center.add(r, r, r))) {
-            double d = Vec3d.ofCenter(bp).distanceTo(c);
-            if (d <= BLOCK_RADIUS) BlockDamage.damage(owner, w, bp.toImmutable(), (float) (400 * (1 - d / (BLOCK_RADIUS + 1))));
+            double d = Vec3d.ofCenter(bp).distanceTo(c) + random.nextDouble() * 0.8; // ragged crater edge
+            if (d <= BLOCK_RADIUS) BlockDamage.damage(owner, w, bp.toImmutable(), (float) (BLOCK_DAMAGE * (1 - d / (BLOCK_RADIUS + 1))), 0.12f);
         }
         if (owner != null) CsServer.award(owner, "bomb_exploded", 0);
         for (ServerPlayerEntity p : w.getPlayers()) CsServer.send(p, "sound", "radio/terwin.wav");
     }
-
     @Override
     public boolean damage(ServerWorld world, DamageSource source, float amount) { return false; }
 
