@@ -400,7 +400,7 @@ final class TestMode {
                         ServerPlayerEntity s2 = serverPlayer(c);
                         if (s2 == null) return;
                         ServerWorld w = s2.getEntityWorld();
-                        int x = (int) bombAt.x + 25, z = (int) bombAt.z;
+                        int x = (int) bombAt.x + 32, z = (int) bombAt.z;
                         w.getChunk(x >> 4, z >> 4);
                         s2.requestTeleport(x + 0.5, w.getTopY(Heightmap.Type.MOTION_BLOCKING, x, z) + 0.1, z + 0.5);
                     });
@@ -421,7 +421,7 @@ final class TestMode {
                     int air = 0;
                     if (sp != null) {
                         net.minecraft.util.math.BlockPos ctr = net.minecraft.util.math.BlockPos.ofFloored(bombAt);
-                        for (net.minecraft.util.math.BlockPos bp : net.minecraft.util.math.BlockPos.iterate(ctr.add(-6, -6, -6), ctr.add(6, 0, 6))) {
+                        for (net.minecraft.util.math.BlockPos bp : net.minecraft.util.math.BlockPos.iterate(ctr.add(-12, -12, -12), ctr.add(12, 0, 12))) {
                             if (sp.getEntityWorld().getBlockState(bp).isAir()) air++;
                         }
                     }

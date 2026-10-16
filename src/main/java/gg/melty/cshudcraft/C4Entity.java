@@ -28,7 +28,7 @@ import java.util.UUID;
 public class C4Entity extends Entity {
     public static final int FUSE_TICKS = 45 * 20;
     /** Players and mobs within RADIUS are hurt (CS_DAMAGE at the center) and thrown back; blocks within BLOCK_RADIUS take BLOCK_DAMAGE at the center. */
-    static final double RADIUS = 20, BLOCK_RADIUS = 8, CS_DAMAGE = 800, BLOCK_DAMAGE = 1800, KNOCKBACK = 2.6;
+    static final double RADIUS = 24, BLOCK_RADIUS = 12, CS_DAMAGE = 800, BLOCK_DAMAGE = 3000, KNOCKBACK = 3.0;
     private static final TrackedData<Integer> TICKS_LEFT = DataTracker.registerData(C4Entity.class, TrackedDataHandlerRegistry.INTEGER);
 
     UUID planter;
