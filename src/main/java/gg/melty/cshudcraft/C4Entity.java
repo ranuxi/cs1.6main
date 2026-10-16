@@ -66,7 +66,7 @@ public class C4Entity extends Entity {
                 float t = 1f - left / (float) FUSE_TICKS;
                 nextBeep = Math.max(2, Math.round(30 * (1 - t) * (1 - t) + 2));
                 int file = Math.min(5, 1 + (int) (t * 5));
-                CsServer.soundAround(w, getEntityPos(), "weapons/c4_beep" + file + ".wav", 0.8f, null, 40);
+                CsServer.soundAround(w, getEntityPos(), "weapons/c4_beep" + file + ".wav", 0.8f, null, 40, "c4:" + getId());
             }
         }
     }

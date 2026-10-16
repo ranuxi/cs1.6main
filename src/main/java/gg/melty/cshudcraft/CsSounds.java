@@ -55,8 +55,8 @@ public final class CsSounds {
             long delay = 0;
             for (String rel : rels) {
                 long d = delay;
-                if (d == 0) playNow(assets, rel, 1f);
-                else LATER.schedule(() -> onClient(() -> playNow(assets, rel, 1f)), d, TimeUnit.MILLISECONDS);
+                if (d == 0) playNow(assets, rel, 1f, null);
+                else LATER.schedule(() -> onClient(() -> playNow(assets, rel, 1f, null)), d, TimeUnit.MILLISECONDS);
                 Clip c = clip(assets, rel);
                 delay += c == null ? 0 : c.millis();
             }
@@ -64,7 +64,15 @@ public final class CsSounds {
     }
 
     public static void play(CsAssets assets, String rel, float volume) {
-        onClient(() -> playNow(assets, rel, volume));
+        onClient(() -> playNow(assets, rel, volume, null));
+    }
+
+    /**
+     * Plays on a named channel, like GoldSrc entity channels: a new sound on the same channel cuts the
+     * previous one. The C4 uses one channel, so its 1.5 s beep files never pile up when it beeps fast.
+     */
+    public static void playOn(CsAssets assets, String channel, String rel, float volume) {
+        onClient(() -> playNow(assets, rel, volume, channel));
     }
 
     private static void onClient(Runnable r) {
@@ -73,7 +81,9 @@ public final class CsSounds {
         else mc.execute(r);
     }
 
-    private static void playNow(CsAssets assets, String rel, float volume) {
+    private static final Map<String, Integer> CHANNELS = new HashMap<>();
+
+    private static void playNow(CsAssets assets, String rel, float volume, String channel) {
         if (!assets.loaded()) return;
         float master = MinecraftClient.getInstance().options.getSoundVolume(SoundCategory.MASTER);
         float v = volume * master * 0.8f;
@@ -83,7 +93,16 @@ public final class CsSounds {
             if (!ensureSources()) return;
             Clip c = clip(assets, rel);
             if (c == null) return;
-            int slot = freeSource();
+            int slot = -1;
+            if (channel != null) {
+                Integer s = CHANNELS.get(channel);
+                if (s != null) slot = s; // same channel: reuse its source, which stops the old sound
+            }
+            if (slot < 0) slot = freeSource();
+            for (Map.Entry<String, Integer> e : CHANNELS.entrySet()) {
+                if (e.getValue() == slot && !e.getKey().equals(channel)) { CHANNELS.remove(e.getKey()); break; }
+            }
+            if (channel != null) CHANNELS.put(channel, slot);
             int src = SOURCES[slot];
             AL10.alSourceStop(src);
             AL10.alSourcei(src, AL10.AL_BUFFER, c.buffer());
@@ -111,6 +130,7 @@ public final class CsSounds {
     private static boolean ensureSources() {
         if (ready && AL10.alIsSource(SOURCES[0])) return true;
         BUFFERS.clear();
+        CHANNELS.clear();
         AL10.alGetError();
         for (int i = 0; i < POOL; i++) {
             SOURCES[i] = AL10.alGenSources();
@@ -124,6 +144,7 @@ public final class CsSounds {
     private static void reset() {
         ready = false;
         BUFFERS.clear();
+        CHANNELS.clear();
     }
 
     /** A source that's not playing, or the one that started longest ago. */

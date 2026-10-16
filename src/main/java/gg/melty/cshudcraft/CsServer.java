@@ -178,9 +178,15 @@ public final class CsServer implements ModInitializer {
 
     /** A CS sound at a place, for every player nearby except the one who made it (they play it themselves). */
     static void soundAround(ServerWorld w, Vec3d pos, String sound, float volume, PlayerEntity except, double radius) {
+        soundAround(w, pos, sound, volume, except, radius, null);
+    }
+
+    /** channel: a new sound on the same channel cuts the last one (GoldSrc entity channels). */
+    static void soundAround(ServerWorld w, Vec3d pos, String sound, float volume, PlayerEntity except, double radius, String channel) {
         for (ServerPlayerEntity p : w.getPlayers()) {
             if (p == except || p.squaredDistanceTo(pos) > radius * radius) continue;
-            send(p, "sound", sound, (float) pos.x, (float) pos.y, (float) pos.z, volume);
+            if (channel == null) send(p, "sound", sound, (float) pos.x, (float) pos.y, (float) pos.z, volume);
+            else send(p, "sound_ch", channel + "|" + sound, (float) pos.x, (float) pos.y, (float) pos.z, volume);
         }
     }
 

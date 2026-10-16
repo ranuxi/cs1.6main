@@ -704,6 +704,16 @@ public final class ClientCs {
                 }
                 if (vol > 0.02f) CsSounds.play(CsHudCraft.ASSETS, ev.arg(), vol);
             }
+            case "sound_ch" -> {
+                int bar = ev.arg().indexOf('|');
+                if (bar < 0) return;
+                float vol = 1f;
+                if (n.size() >= 4 && mc.player != null) {
+                    double d = mc.player.getEyePos().distanceTo(new Vec3d(n.get(0), n.get(1), n.get(2)));
+                    vol = n.get(3) * (float) Math.pow(Math.max(0, 1 - d / 64.0), 1.5);
+                }
+                if (vol > 0.02f) CsSounds.playOn(CsHudCraft.ASSETS, ev.arg().substring(0, bar), ev.arg().substring(bar + 1), vol);
+            }
             case "flash" -> blind = Math.max(blind, n.isEmpty() ? 1f : n.get(0));
             case "award" -> CsHud.onAward(ev.arg(), n.size() > 0 ? Math.round(n.get(0)) : 0, n.size() > 1 ? Math.round(n.get(1)) : 0,
                     n.size() > 2 ? Math.round(n.get(2)) : 0, n.size() > 3 ? Math.round(n.get(3)) : 1);
