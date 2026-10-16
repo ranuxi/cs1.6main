@@ -92,6 +92,16 @@ public final class CsState {
     public int clip(String weaponId) { return clips.getOrDefault(weaponId, 0); }
     public int reserveOf(String ammoId) { return reserve.getOrDefault(ammoId, 0); }
 
+    /** What others see in this player's hand (CsNet.HELD): the id of the weapon or item in the current slot, "" in Minecraft mode. */
+    public String held() {
+        if (!csMode) return "";
+        return switch (slot) {
+            case SLOT_GRENADE -> currentGrenade();
+            case SLOT_BOMB -> hasBomb ? "c4" : "";
+            default -> { Sheets.Weapon w = current(); yield w == null ? "" : w.id(); }
+        };
+    }
+
     /** Picks the first grenade still held when slot 4 is selected. */
     public String currentGrenade() {
         if (!grenade.isEmpty() && grenades.getOrDefault(grenade, 0) > 0) return grenade;

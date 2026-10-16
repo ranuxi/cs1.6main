@@ -45,6 +45,9 @@ public class C4Entity extends Entity {
 
     public int ticksLeft() { return dataTracker.get(TICKS_LEFT); }
 
+    /** Dev check only (MpTest): makes the bomb go off sooner. */
+    void shortenFuse(int ticks) { dataTracker.set(TICKS_LEFT, Math.min(ticksLeft(), ticks)); }
+
     @Override
     public void tick() {
         super.tick();

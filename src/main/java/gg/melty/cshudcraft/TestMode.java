@@ -6,6 +6,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.option.Perspective;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.mob.ZombieEntity;
@@ -37,7 +38,7 @@ import java.util.UUID;
  * %LOCALAPPDATA%/Melty/test/cs-1-6-craft.json exists: makes a world and plays the main scenarios
  * by itself, appending "pass <check>" / "fail <check>: why" lines. It never quits the game.
  */
-final class TestMode {
+public final class TestMode {
     static final String SLUG = "cs-1-6-craft";
 
     private static boolean active;
@@ -52,15 +53,22 @@ final class TestMode {
     private static int bombId;
     private static Vec3d bombAt = Vec3d.ZERO;
     private static int boomAt = -1;
+    private static boolean poseSide;
+
+    /** Dev pose check: the model is drawn turned sideways for the side screenshot. */
+    public static boolean poseSide() { return poseSide; }
     static boolean trigger;
     static boolean alt;
     /** Dev check only: CSHUDCRAFT_SHOTS=1 saves screenshots of each step and plays a longer showcase. */
     private static final boolean SHOTS = "1".equals(System.getenv("CSHUDCRAFT_SHOTS"));
+    /** Dev check only: CSHUDCRAFT_POSE=1 makes a world and screenshots every CS weapon held in third person. */
+    private static final boolean POSE = "1".equals(System.getenv("CSHUDCRAFT_POSE"));
+    private static final String[] POSES = {"ak47", "awp", "m249", "usp", "deagle", "elite", "knife", "hegrenade", "c4"};
 
     static boolean shotsMode() { return SHOTS; }
 
     private static void shot(MinecraftClient c, String name) {
-        if (!SHOTS) return;
+        if (!SHOTS && !POSE) return;
         net.minecraft.client.util.ScreenshotRecorder.saveScreenshot(c.runDirectory, "cs_" + name + ".png", c.getFramebuffer(), 1, t -> { });
     }
 
@@ -69,6 +77,12 @@ final class TestMode {
     static void init() {
         String local = System.getenv("LOCALAPPDATA");
         if (local == null) return;
+        if (POSE) {
+            seed = 1L;
+            checksFile = Paths.get(System.getProperty("java.io.tmpdir"), "cshudcraft-pose-checks.txt");
+            active = true;
+            return;
+        }
         Path f = Paths.get(local, "Melty", "test", SLUG + ".json");
         if (!Files.isRegularFile(f)) return;
         try {
@@ -115,6 +129,7 @@ final class TestMode {
     static void tick(MinecraftClient c) {
         trigger = false;
         alt = false;
+        MpTest.tick(c);
         if (!active || c.player == null || c.world == null || (c.currentScreen != null && !(c.currentScreen instanceof BuyScreen))) return;
         inWorld++;
         if (wait > 0) { wait--; return; }
@@ -129,7 +144,7 @@ final class TestMode {
                 if (!CsHudCraft.enabled()) CsHudCraft.setEnabled(true, false);
                 ClientCs.select(CsState.SLOT_KNIFE);
                 mark = ViewModelRenderer.framesDrawn();
-                next(1, 0);
+                next(POSE ? 60 : 1, 0);
             }
             case 1 -> {
                 if (ViewModelRenderer.framesDrawn() - mark >= 40) { report("viewmodel-drawn", null); shot(c, "1_knife"); next(2, 20); }
@@ -232,7 +247,69 @@ final class TestMode {
                 if (CsHudCraft.csFrames() > mark && now.money == moneyMark && now.pistol.equals("deagle")) report("mode-toggle", null);
                 else report("mode-toggle", "after switching back: frames " + (CsHudCraft.csFrames() - mark) + ", money " + now.money + " (was " + moneyMark + ")");
                 shot(c, "6_cs_back");
-                next(SHOTS ? 20 : 99, 0);
+                next(50, 0);
+            }
+            case 50 -> { // the Deagle in hand as others see it: third person
+                ClientCs.select(CsState.SLOT_PISTOL);
+                c.options.setPerspective(Perspective.THIRD_PERSON_FRONT);
+                mark = ThirdPersonWeapon.framesDrawn();
+                next(51, 10);
+            }
+            case 51 -> {
+                String held = ThirdPersonWeapon.heldOf(p);
+                if (held.equals("deagle") && ThirdPersonWeapon.framesDrawn() - mark >= 20) {
+                    report("third-person-weapon", null);
+                    shot(c, "7_third_person");
+                    c.options.setPerspective(Perspective.FIRST_PERSON);
+                    next(52, 0);
+                } else if (stageTicks > 200) {
+                    report("third-person-weapon", "held \"" + held + "\", p_ model frames " + (ThirdPersonWeapon.framesDrawn() - mark));
+                    c.options.setPerspective(Perspective.FIRST_PERSON);
+                    next(52, 0);
+                }
+            }
+            case 52 -> { // the world is open to others and Melty has an address to hand out
+                String a = MeltyLink.address();
+                if (a != null) { report("open-to-others", null); next(SHOTS ? 20 : 99, 0); }
+                else if (!MeltyLink.hosting()) { report("open-to-others", "this copy was started to join a game"); next(SHOTS ? 20 : 99, 0); }
+                else if (stageTicks > 70 * 20) { report("open-to-others", "no join address after 70 s"); next(SHOTS ? 20 : 99, 0); }
+            }
+            case 60 -> { // dev pose check (CSHUDCRAFT_POSE=1): each CS weapon in hand, seen from the front and from behind
+                if (stageTicks == 1) {
+                    c.options.hudHidden = true;
+                    p.setPitch(0f);
+                    ServerPlayerEntity sp = serverPlayer(c);
+                    if (sp != null) { // a stone floor high in the sky, so nothing stands between camera and player
+                        net.minecraft.util.math.BlockPos up = sp.getBlockPos().up(60);
+                        sp.getEntityWorld().setBlockState(up, net.minecraft.block.Blocks.STONE.getDefaultState());
+                        sp.requestTeleport(up.getX() + 0.5, up.getY() + 1, up.getZ() + 0.5);
+                    }
+                }
+                int i = (stageTicks - 1) / 50, t = (stageTicks - 1) % 50;
+                if (i >= POSES.length) { c.options.hudHidden = false; c.options.setPerspective(Perspective.FIRST_PERSON); next(99, 0); return; }
+                if (t == 0) {
+                    p.setYaw(0f);
+                    p.setPitch(0f);
+                    ServerPlayerEntity sp = serverPlayer(c);
+                    if (sp == null) return;
+                    CsState s = CsServer.state(sp);
+                    String id = POSES[i];
+                    Sheets.Weapon w = Sheets.weapon(id);
+                    if (w != null && w.slot() == CsState.SLOT_PRIMARY) { s.primary = id; s.slot = CsState.SLOT_PRIMARY; }
+                    else if (w != null && w.slot() == CsState.SLOT_PISTOL) { s.pistol = id; s.slot = CsState.SLOT_PISTOL; }
+                    else if (w != null) s.slot = CsState.SLOT_KNIFE;
+                    else if (id.equals("c4")) { s.hasBomb = true; s.slot = CsState.SLOT_BOMB; }
+                    else { s.grenades.put(id, 1); s.grenade = id; s.slot = CsState.SLOT_GRENADE; }
+                    CsServer.save(sp, s);
+                    poseSide = true;
+                    c.options.setPerspective(Perspective.THIRD_PERSON_BACK);
+                } else if (t == 20) {
+                    shot(c, "p3_" + POSES[i] + "_side");
+                    poseSide = false;
+                    c.options.setPerspective(Perspective.THIRD_PERSON_FRONT);
+                } else if (t == 40) {
+                    shot(c, "p3_" + POSES[i] + "_front");
+                }
             }
             case 15 -> { // obsidian 3 blocks ahead at eye height
                 Vec3d look = Vec3d.fromPolar(0, p.getYaw());

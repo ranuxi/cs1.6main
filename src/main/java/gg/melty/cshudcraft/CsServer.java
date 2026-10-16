@@ -166,7 +166,11 @@ public final class CsServer implements ModInitializer {
     static void ensure(ServerPlayerEntity p) { save(p, state(p)); }
 
     /** Every change goes through here so the owner gets it synced. */
-    static void save(ServerPlayerEntity p, CsState s) { p.setAttached(CsNet.STATE, s.copy()); }
+    static void save(ServerPlayerEntity p, CsState s) {
+        p.setAttached(CsNet.STATE, s.copy());
+        String held = s.held();
+        if (!held.equals(p.getAttached(CsNet.HELD))) p.setAttached(CsNet.HELD, held);
+    }
 
     private static Live live(PlayerEntity p) { return LIVE.computeIfAbsent(p.getUuid(), u -> new Live()); }
 

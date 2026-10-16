@@ -697,6 +697,7 @@ public final class ClientCs {
         List<Float> n = ev.nums();
         switch (ev.kind()) {
             case "sound" -> {
+                MpTest.onSound(ev.arg());
                 float vol = 1f;
                 if (n.size() >= 4 && mc.player != null) {
                     double d = mc.player.getEyePos().distanceTo(new Vec3d(n.get(0), n.get(1), n.get(2)));
@@ -707,6 +708,7 @@ public final class ClientCs {
             case "sound_ch" -> {
                 int bar = ev.arg().indexOf('|');
                 if (bar < 0) return;
+                MpTest.onSound(ev.arg().substring(bar + 1));
                 float vol = 1f;
                 if (n.size() >= 4 && mc.player != null) {
                     double d = mc.player.getEyePos().distanceTo(new Vec3d(n.get(0), n.get(1), n.get(2)));
@@ -720,6 +722,7 @@ public final class ClientCs {
             case "hit" -> {
                 if (!n.isEmpty() && n.get(0) > 0) CsSounds.play(CsHudCraft.ASSETS, "weapons/headshot2.wav", 0.6f);
             }
+            case "kill" -> KillFeed.onEvent(ev.arg(), n);
             case "denied" -> {
                 if (mc.player != null) mc.player.sendMessage(Text.translatable("cshudcraft.denied." + ev.arg()).formatted(Formatting.RED), true);
                 CsSounds.play(CsHudCraft.ASSETS, "common/wpn_denyselect.wav", 0.8f);

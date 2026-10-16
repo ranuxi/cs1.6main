@@ -41,7 +41,12 @@
       {"id": "buy-anywhere",    "passes_when": "Deagle bought at spawn and 50AE ammo bought 300 blocks away, money reduced by exactly their prices"},
       {"id": "shoot-hit",       "passes_when": "a Deagle shot at a zombie 5 blocks ahead damages it"},
       {"id": "reload",          "passes_when": "R refills the Deagle clip from the 50AE reserve (server state)"},
-      {"id": "mode-toggle",     "passes_when": "F6 shows Minecraft's HUD, F6 again brings the CS HUD back with money and weapons unchanged"}
+      {"id": "block-break",     "passes_when": "Deagle shots break an obsidian block 3 blocks ahead after several hits"},
+      {"id": "c4-plant",        "passes_when": "a bought C4 is planted after holding fire for the 3 s plant"},
+      {"id": "c4-defuse",       "passes_when": "holding use on the planted C4 for 10 s defuses it"},
+      {"id": "mode-toggle",     "passes_when": "F6 shows Minecraft's HUD, F6 again brings the CS HUD back with money and weapons unchanged"},
+      {"id": "third-person-weapon", "passes_when": "in third person the Deagle in hand is synced (CsNet.HELD) and drawn with CS's p_deagle.mdl for 20 frames"},
+      {"id": "open-to-others",  "passes_when": "the test world is opened to others and a join address is written to melty.log (e4mc relay domain, or the LAN address)"}
     ]
   },
   "keys": {

@@ -7,11 +7,13 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityFeatureRendererRegistrationCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.render.entity.PlayerEntityRenderer;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -94,9 +96,15 @@ public class CsHudCraft implements ClientModInitializer {
             if (csActive()) HUD.render(ctx);
         });
         ClientPlayNetworking.registerGlobalReceiver(CsNet.Event.ID, (payload, ctx) -> ClientCs.onEvent(payload));
-        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> ClientCs.onModeChanged(enabled));
+        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+            ClientCs.onModeChanged(enabled);
+            MeltyLink.onJoinWorld(client);
+        });
         EntityRendererRegistry.register(CsServer.GRENADE, GrenadeRenderer::new);
         EntityRendererRegistry.register(CsServer.C4, C4Renderer::new);
+        LivingEntityFeatureRendererRegistrationCallback.EVENT.register((type, renderer, helper, context) -> {
+            if (renderer instanceof PlayerEntityRenderer<?> pr) helper.register(new ThirdPersonWeapon(pr));
+        });
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (TOGGLE.wasPressed()) setEnabled(!enabled, true);
             while (HAND.wasPressed()) {
@@ -106,9 +114,14 @@ public class CsHudCraft implements ClientModInitializer {
             }
             ClientCs.tick(client);
             TestMode.tick(client);
+            MeltyLink.tick(client);
         });
-        ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> TestMode.onScreen(client, screen));
+        ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
+            TestMode.onScreen(client, screen);
+            MeltyLink.onScreen(client, screen);
+        });
         TestMode.init();
+        MeltyLink.init();
     }
 
     private static KeyBinding key(String name, int code) {

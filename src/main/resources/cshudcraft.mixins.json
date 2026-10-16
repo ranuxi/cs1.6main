@@ -3,6 +3,6 @@
   "package": "gg.melty.cshudcraft.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": ["LivingEntityArmorMixin", "AdvancementMixin"],
-  "client": ["MinecraftClientMixin", "HeldItemRendererMixin", "GameRendererMixin"],
+  "client": ["MinecraftClientMixin", "HeldItemRendererMixin", "GameRendererMixin", "PlayerEntityRendererMixin"],
   "injectors": { "defaultRequire": 1 }
 }

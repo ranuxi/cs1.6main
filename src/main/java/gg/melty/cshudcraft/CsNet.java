@@ -22,6 +22,14 @@ public final class CsNet {
             b -> b.persistent(CsState.CODEC).copyOnDeath().syncWith(CsState.PACKET_CODEC, AttachmentSyncPredicate.targetOnly()));
 
     /**
+     * What a player holds, for everyone around to see in third person: a weapons.json / equipment.json id
+     * ("ak47", "knife", "hegrenade", "c4"), or "" in Minecraft mode. Synced to all players, not saved.
+     */
+    public static final AttachmentType<String> HELD = AttachmentRegistry.create(
+            Identifier.of(CsHudCraft.MOD_ID, "held"),
+            b -> b.initializer(() -> "").syncWith(PacketCodecs.STRING, AttachmentSyncPredicate.all()));
+
+    /**
      * Client -> server. action: fire, knife, reload_start, reload_finish, select, buy, mode, throw.
      * arg: weapon / item id or extra word. nums: directions (x,y,z per pellet) or other numbers.
      */
@@ -39,7 +47,8 @@ public final class CsNet {
 
     /**
      * Server -> client. kind: sound (arg = CS sound path, nums = x,y,z,volume), flash (nums = strength),
-     * award (arg = reason, nums = money, xp), hit (nums = 1 if headshot), denied (arg = reason).
+     * award (arg = reason, nums = money, xp), hit (nums = 1 if headshot), denied (arg = reason),
+     * kill (arg = killer, killer side, icon, victim, victim side joined by newlines; nums = headshot, enemy down).
      */
     public record Event(String kind, String arg, List<Float> nums) implements CustomPayload {
         public static final Id<Event> ID = new Id<>(Identifier.of(CsHudCraft.MOD_ID, "event"));

@@ -11,6 +11,17 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 }
+loom {
+    runs {
+        // a second client for playing together on one PC: its own folder and name
+        client2 {
+            client()
+            name = 'Minecraft Client 2'
+            runDir = 'run2'
+            programArgs '--username', 'Player2'
+        }
+    }
+}
 processResources {
     inputs.property 'version', project.version
     filesMatching('fabric.mod.json') { expand 'version': project.version }
@@ -19,4 +30,3 @@ processResources {
 }
 tasks.withType(JavaCompile).configureEach { it.options.release = 21 }
 java { sourceCompatibility = JavaVersion.VERSION_21; targetCompatibility = JavaVersion.VERSION_21 }
-
