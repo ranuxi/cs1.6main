@@ -26,13 +26,14 @@
     ]
   },
   "flashlight": {
-    "_about": "CS 1.6 flashlight (F): a battery of 100 drains 1 per drainSeconds while on and charges 1 per chargeSeconds while off (Half-Life FLASH_DRAIN_TIME 1.2 / FLASH_CHARGE_TIME 0.2). The spot is a Minecraft light block where the beam ends, level 15 up close fading to farLevel at rangeBlocks (CS traces 2048 units, about 51 blocks).",
+    "_about": "CS 1.6 flashlight (F): a battery of 100 drains 1 per drainSeconds while on and charges 1 per chargeSeconds while off (Half-Life FLASH_DRAIN_TIME 1.2 / FLASH_CHARGE_TIME 0.2). The spot is a Minecraft light block where the beam ends, nearLevel up close fading to farLevel at rangeBlocks; kept short and dim so it lights a small spot, not a whole hillside.",
     "columns": ["key", "value", "use"],
     "rows": [
       {"key": "drainSeconds",  "value": 1.2, "use": "seconds per 1% of battery while on"},
       {"key": "chargeSeconds", "value": 0.2, "use": "seconds per 1% of battery while off"},
-      {"key": "rangeBlocks",   "value": 48,  "use": "how far the beam reaches"},
-      {"key": "farLevel",      "value": 7,   "use": "light level of the spot at the end of the range"}
+      {"key": "rangeBlocks",   "value": 20,  "use": "how far the beam reaches; nothing is lit beyond it"},
+      {"key": "nearLevel",     "value": 12,  "use": "light level of the spot up close (a level-L light block lights about L-1 blocks around, so lower = tighter spot)"},
+      {"key": "farLevel",      "value": 6,   "use": "light level of the spot at the end of the range"}
     ]
   },
   "settings": {

@@ -81,7 +81,7 @@ final class Flashlight {
         if (p.age % 2 == 0) aim(p);
     }
 
-    /** Moves the light block to where the beam ends, brightest up close (CS: the spot dims with range). */
+    /** Moves the light block to where the beam ends, brightest up close and dimmer further off; nothing past rangeBlocks. */
     private static void aim(ServerPlayerEntity p) {
         ServerWorld w = p.getEntityWorld();
         Vec3d eye = p.getEyePos(), dir = p.getRotationVec(1f);
@@ -92,7 +92,8 @@ final class Flashlight {
             return;
         }
         double d = eye.distanceTo(hit.getPos());
-        int level = (int) Math.round(15 + (Sheets.flash("farLevel") - 15) * MathHelper.clamp(d / range, 0, 1));
+        double near = Sheets.flash("nearLevel");
+        int level = (int) Math.round(near + (Sheets.flash("farLevel") - near) * MathHelper.clamp(d / range, 0, 1));
         BlockPos[] tries = {
                 hit.getBlockPos().offset(hit.getSide()),
                 BlockPos.ofFloored(hit.getPos().subtract(dir.multiply(0.6))),
