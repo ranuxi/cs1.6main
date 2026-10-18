@@ -42,13 +42,6 @@ gradlew build
 
 Вся настройка оружия, патронов, цен и наград — в таблицах `sheets/*.json` (они же упаковываются в мод).
 
-## Поддержать
-
-Если мод тебе понравился, буду рад любой поддержке: всё пойдёт на учёбу 📚
-Спасибо, что ты здесь ❤️
-
-[![Donate](https://img.shields.io/badge/Поддержать-DonationAlerts-orange?style=for-the-badge)](https://www.donationalerts.com/r/ranuxi)
-
 ## Лицензия
 
 MIT (см. `LICENSE`). Counter-Strike и Half-Life — товарные знаки Valve, Minecraft — Mojang Studios; проект с ними не связан.
